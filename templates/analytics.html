@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Analytics</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <!-- Include the necessary charting library -->
+    <!-- For example, if you want to use Chart.js, add the following CDN link -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>Analytics</h2>
+        <canvas id="chart"></canvas>
+    </div>
+
+    <script>
+        // Example chart data
+        var chartData = {
+            labels: ['January', 'February', 'March', 'April', 'May', 'June'],
+            datasets: [{
+                label: 'Expenses',
+                data: [500, 700, 1000, 800, 1200, 900],
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        };
+
+        // Get the chart canvas element
+        var chartCanvas = document.getElementById('chart').getContext('2d');
+
+        // Create and render the chart
+        var chart = new Chart(chartCanvas, {
+            type: 'bar',
+            data: chartData,
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
