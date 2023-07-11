@@ -1,5 +1,4 @@
-Flask
-Flask-JWT-Extended
-pymysql
-cryptography
-python-dotenv
+flask
+flask_mysqldb
+flask_jwt_extended
+bcrypt

@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Wallets</h1>
+
+<!-- Wallets -->
+<div class="wallets-container my-10">
+  <!-- Add Wallet Button -->
+    <button onclick="showAddWalletPopup()" class="add-wallet-button">Add new wallet</button>
+  
+    {% for wallet in wallets %}
+    <a href="{{ url_for('wallet_details', wallet_name=wallet[1]) }}" class="wallet-card">
+        <div class="wallet-name">{{ wallet[1] }}</div>
+    </a>
+{% endfor %}
+</div>
+
+<!-- Add Wallet Popup -->
+<div id="addWalletPopup">
+  <form id="addWalletForm" action="/wallets" method="post">
+    <input type="text" id="walletName" name="walletName" required placeholder="Enter wallet name"><br><br>
+    <input type="submit" value="Add Wallet">
+    <button type="button" onclick="cancelAddWallet()" class="add-wallet-button">Cancel</button>
+  </form>
+</div>
+
+<script>
+document.getElementById("addWalletForm").addEventListener("submit", function(event) {
+  event.preventDefault(); // Prevent form submission
+  
+  // Get the form data
+  var formData = new FormData(this);
+  
+  // Send a POST request to add the wallet
+  fetch("/wallets", {
+    method: "POST",
+    body: formData
+  })
+  .then(function(response) {
+    if (response.ok) {
+      // Wallet added successfully, refresh the page to see the updated list
+      window.location.reload();
+    } else {
+      // Handle the error response
+      console.error("Failed to add wallet:", response);
+      // Display an error message to the user
+      alert("Failed to add wallet. Please try again.");
+    }
+  })
+  .catch(function(error) {
+    // Handle any network or other errors
+    console.error("Error adding wallet:", error);
+    // Display an error message to the user
+    alert("An error occurred while adding the wallet. Please try again.");
+  });
+});
+
+function showAddWalletPopup() {
+  var popup = document.getElementById("addWalletPopup");
+  popup.style.display = "block";
+}
+
+function cancelAddWallet() {
+  var popup = document.getElementById("addWalletPopup");
+  popup.style.display = "none";
+}
+
+// Hide the add wallet popup initially
+cancelAddWallet();
+</script>
+{% endblock %}

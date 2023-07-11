@@ -1,20 +1,20 @@
-version: "3"
+version: "3.8"
 services:
-  db:
-    image: mysql:latest
-    env_file:
-      - .env
-    ports:
-      - "3306:3306"
-    volumes:
-      - ./mysql_data:/var/lib/mysql
-
   app:
-    build:
-      context: .
+    build: .
     ports:
-      - "5000:5000"
+      - 5000:5000
     depends_on:
       - db
-    env_file:
-      - .env
+  db:
+    image: mysql:latest
+    restart: always
+    environment:
+      MYSQL_DATABASE: walletwatch_db
+      MYSQL_USER: cct
+      MYSQL_PASSWORD: cct
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - mysql_data:/var/lib/mysql
+volumes:
+  mysql_data:

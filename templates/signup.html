@@ -2,66 +2,119 @@
 <html>
 <head>
     <title>Sign Up</title>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
     <style>
-        .container {
-            max-width: 400px;
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f8f8;
         }
 
-        .form-group {
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 40px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333333;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 8px;
+            color: #666666;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+
+        input[type="text"]::placeholder,
+        input[type="password"]::placeholder {
+            color: #999999;
+        }
+
+        input[type="submit"] {
+            width: 100%;
+            padding: 12px;
+            background-color: #337ab7;
+            border: none;
+            border-radius: 4px;
+            color: #ffffff;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #286090;
+        }
+
+        .text-center {
             text-align: center;
         }
 
-        .form-control {
-            width: 100%;
-            max-width: 300px;
-            margin: 0 auto;
+        .mt-3 {
+            margin-top: 20px;
         }
 
-        .btn-signup {
-            display: block;
-            width: 150px;
-            margin: 10px auto;
+        .login-link {
+            color: #337ab7;
+            text-decoration: none;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
-    <div class="container mt-5">
-        <h2 class="text-center">Sign Up</h2>
-        <form method="post" id="signupForm" onsubmit="return validateForm()">
-            <div class="form-group">
-                <input type="email" class="form-control" id="email" name="email" required placeholder="Email">
-            </div>
-            <div class="form-group">
-                <input type="password" class="form-control" id="password" name="password" required placeholder="Password">
-            </div>
-            <button type="submit" class="btn btn-primary btn-signup">Sign Up</button>
-            <p class="mt-3 text-center">Already registered? <a href="/login">Login here</a></p>
+    <div class="container">
+        <h1>Sign Up</h1>
+        <form id="signup-form">
+            <input type="text" id="email" name="email" placeholder="Email" required><br><br>
+            <input type="password" id="password" name="password" placeholder="Password" required><br><br>
+            <input type="submit" value="Sign Up">
         </form>
+        <div class="text-center mt-3">
+            <p>Already registered? <a href="/login" class="login-link">Login here</a></p>
+        </div>
     </div>
 
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-        function validateForm() {
-            // Get form inputs
-            var email = document.getElementById("email").value;
-            var password = document.getElementById("password").value;
+        $(document).ready(function () {
+            $('#signup-form').submit(function (event) {
+                event.preventDefault();
 
-            // Perform form validation
-            if (email.trim() === "") {
-                alert("Please enter your email.");
-                return false;
-            }
+                var email = $('#email').val();
+                var password = $('#password').val();
 
-            if (password.trim() === "") {
-                alert("Please enter your password.");
-                return false;
-            }
-
-            // Additional validation logic can be added here
-
-            // If all validations pass, allow form submission
-            return true;
-        }
+                // Make an AJAX request to the signup route
+                $.ajax({
+                    type: 'POST',
+                    url: '/signup',
+                    data: { 'email': email, 'password': password },
+                    success: function (response) {
+                        // Handle signup success
+                        console.log('Signup successful');
+                        // Redirect to the login page or any other desired page
+                        window.location.href = '/login';
+                    },
+                    error: function (xhr, status, error) {
+                        // Handle signup error
+                        console.log('Signup failed: ' + error);
+                    }
+                });
+            });
+        });
     </script>
 </body>
 </html>
