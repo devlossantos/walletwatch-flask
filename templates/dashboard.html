@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<style>
+  .custom-margin {
+    margin-top: 50px;
+    margin-bottom: 20px;
+  }
+  
+  .bottom-squares {
+    margin-top: 300px;
+  }
+  
+  .section-title {
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 30px;
+    color: #808080; /* Choose your desired font color */
+  }
+</style>
+
+<div class="container custom-margin">
+
+  <div class="row mt-5">
+    <!-- Square 1 -->
+    <div class="col-md-6 col-lg-6 mb-3">
+      <div class="card border-0 wallet-card" style="background-color: #FFC107; height: 150px;">
+        <div class="card-body">
+          <!-- Square 1 content -->
+        </div>
+      </div>
+    </div>
+    <!-- Square 2 -->
+    <div class="col-md-6 col-lg-6 mb-3">
+      <div class="card border-0 wallet-card" style="background-color: #17A2B8; height: 150px;">
+        <div class="card-body">
+          <!-- Square 2 content -->
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="row bottom-squares">
+    <div class="col-12">
+      <h2 class="section-title">Your performance this month</h2>
+    </div>
+    
+    <!-- Square 3 -->
+    <div class="col-md-6 col-lg-4 mb-4">
+      <div class="card border-0 wallet-card" style="background-color: #6610F2; height: 200px;">
+        <div class="card-body">
+          <!-- Square 3 content -->
+        </div>
+      </div>
+    </div>
+    <!-- Square 4 -->
+    <div class="col-md-6 col-lg-4 mb-4">
+      <div class="card border-0 wallet-card" style="background-color: #6C757D; height: 200px;">
+        <div class="card-body">
+          <!-- Square 4 content -->
+        </div>
+      </div>
+    </div>
+    <!-- Square 5 -->
+    <div class="col-md-6 col-lg-4 mb-4">
+      <div class="card border-0 wallet-card" style="background-color: #FD7E14; height: 200px;">
+        <div class="card-body">
+          <!-- Square 5 content -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

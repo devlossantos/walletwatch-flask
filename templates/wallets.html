@@ -1,71 +1,126 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h1>Wallets</h1>
+<div class="container">
 
-<!-- Wallets -->
-<div class="wallets-container my-10">
-  <!-- Add Wallet Button -->
-    <button onclick="showAddWalletPopup()" class="add-wallet-button">Add new wallet</button>
-  
+  <!-- Wallets -->
+  <div class="wallets-container">
+    <!-- Add Wallet Button -->
+    <button onclick="showAddWalletPopup()" class="add-wallet-button wallet-name">Add new wallet</button>
+
     {% for wallet in wallets %}
     <a href="{{ url_for('wallet_details', wallet_name=wallet[1]) }}" class="wallet-card">
-        <div class="wallet-name">{{ wallet[1] }}</div>
+      <div class="wallet-name">{{ wallet[1] }}</div>
     </a>
-{% endfor %}
-</div>
+    {% endfor %}
+  </div>
 
-<!-- Add Wallet Popup -->
-<div id="addWalletPopup">
-  <form id="addWalletForm" action="/wallets" method="post">
-    <input type="text" id="walletName" name="walletName" required placeholder="Enter wallet name"><br><br>
-    <input type="submit" value="Add Wallet">
-    <button type="button" onclick="cancelAddWallet()" class="add-wallet-button">Cancel</button>
-  </form>
-</div>
+  <!-- Add Wallet Popup -->
+  <div id="addWalletPopup" class="popup">
+    <form id="addWalletForm" action="/wallets" method="post">
+      <div>
+        <input type="text" id="walletName" name="walletName" required maxlength="50" placeholder="Enter wallet name" oninput="updateCharacterCounter()">
+        <span id="characterCounter" class="character-counter">Max: 50</span>
+      </div>
+      <small id="walletNameError" class="error-message"></small><br><br>
+      <input type="submit" value="Add Wallet">
+      <button type="button" onclick="cancelAddWallet()" class="add-wallet-button">Cancel</button>
+    </form>
+  </div>
 
-<script>
-document.getElementById("addWalletForm").addEventListener("submit", function(event) {
-  event.preventDefault(); // Prevent form submission
-  
-  // Get the form data
-  var formData = new FormData(this);
-  
-  // Send a POST request to add the wallet
-  fetch("/wallets", {
-    method: "POST",
-    body: formData
-  })
-  .then(function(response) {
-    if (response.ok) {
-      // Wallet added successfully, refresh the page to see the updated list
-      window.location.reload();
-    } else {
-      // Handle the error response
-      console.error("Failed to add wallet:", response);
-      // Display an error message to the user
-      alert("Failed to add wallet. Please try again.");
+  <!-- Error Popup -->
+  <div id="errorPopup" class="popup">
+    <div id="addWalletErrorMessage" class="text-danger"></div>
+    <button onclick="closeErrorPopup()" class="close-button">Close</button>
+  </div>
+
+  <style>
+    .popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: white;
+      border: 1px solid #ccc;
+      padding: 20px;
+      z-index: 9999;
+      display: none;
     }
-  })
-  .catch(function(error) {
-    // Handle any network or other errors
-    console.error("Error adding wallet:", error);
-    // Display an error message to the user
-    alert("An error occurred while adding the wallet. Please try again.");
-  });
-});
 
-function showAddWalletPopup() {
-  var popup = document.getElementById("addWalletPopup");
-  popup.style.display = "block";
-}
+    .close-button {
+      margin-top: 10px;
+    }
 
-function cancelAddWallet() {
-  var popup = document.getElementById("addWalletPopup");
-  popup.style.display = "none";
-}
+    .error-message {
+      color: red;
+    }
 
-// Hide the add wallet popup initially
-cancelAddWallet();
-</script>
+    .character-counter {
+      font-size: 12px;
+      color: gray;
+    }
+  </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.18/dist/sweetalert2.all.min.js"></script>
+  <script>
+    function showAddWalletPopup() {
+      var addWalletPopup = document.getElementById("addWalletPopup");
+      addWalletPopup.style.display = "block";
+    }
+
+    function cancelAddWallet() {
+      var addWalletPopup = document.getElementById("addWalletPopup");
+      addWalletPopup.style.display = "none";
+    }
+
+    function updateCharacterCounter() {
+      var walletNameInput = document.getElementById("walletName");
+      var characterCounter = document.getElementById("characterCounter");
+      var remainingCharacters = 50 - walletNameInput.value.length;
+      characterCounter.textContent = remainingCharacters;
+    }
+
+    document.getElementById("addWalletForm").addEventListener("submit", function(event) {
+      event.preventDefault(); // Prevent form submission
+
+      // Close the "Add Wallet" dialog
+      cancelAddWallet();
+
+      // Get the form data
+      var formData = new FormData(this);
+
+      // Send a POST request to add the wallet
+      fetch("/wallets", {
+        method: "POST",
+        body: formData
+      })
+        .then(function(response) {
+          if (response.ok) {
+            // Wallet added successfully, refresh the page to see the updated list
+            window.location.reload();
+          } else {
+            // Handle the error response
+            response.json().then(function(data) {
+              // Display the error message using SweetAlert
+              Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: data.message
+              });
+            });
+          }
+        })
+        .catch(function(error) {
+          // Handle any network or other errors
+          console.error("Error adding wallet:", error);
+          // Display a generic error message using SweetAlert
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'An error occurred while adding the wallet. Please try again.'
+          });
+        });
+    });
+  </script>
+</div>
 {% endblock %}

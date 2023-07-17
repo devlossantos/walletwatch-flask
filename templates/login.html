@@ -2,6 +2,8 @@
 <html>
 <head>
     <title>Login</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.18/dist/sweetalert2.min.css">
+
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -76,6 +78,7 @@
     </style>
 </head>
 <body>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.18/dist/sweetalert2.all.min.js"></script>
     <div class="container">
         <h1>Login</h1>
         <form id="login-form">
@@ -93,10 +96,10 @@
         $(document).ready(function () {
             $('#login-form').submit(function (event) {
                 event.preventDefault();
-
+    
                 var email = $('#email').val();
                 var password = $('#password').val();
-
+    
                 // Make an AJAX request to the login route
                 $.ajax({
                     type: 'POST',
@@ -109,8 +112,19 @@
                         window.location.href = '/dashboard';
                     },
                     error: function (xhr, status, error) {
-                        // Handle login error
-                        console.log('Login failed: ' + error);
+                        var errorMessage;
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        } else {
+                            errorMessage = 'An error occurred. Please try again.';
+                        }
+    
+                        // Handle login error using SweetAlert
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Login Failed',
+                            text: errorMessage,
+                        });
                     }
                 });
             });
