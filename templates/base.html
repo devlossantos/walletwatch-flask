@@ -24,6 +24,8 @@
             height: 300px;
             border-radius: 8px;
             text-decoration: none;
+            text-align: center;
+            padding: 50px;
         }
 
         .wallet-name {
@@ -172,10 +174,25 @@
             text-decoration: underline;
         }
 
+        .user-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .user-item button {
+            margin-left: 10px;
+        }
+
         .body-container {
             padding-top: 50px;
             overflow-y: scroll;
             height: calc(100vh - 50px);
+        }
+
+        .btn-focus:focus {
+            outline: none;
         }
 
     </style>

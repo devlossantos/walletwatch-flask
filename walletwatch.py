@@ -366,6 +366,36 @@ def delete_user():
     # User email or wallet ID not provided
     return jsonify({'message': 'Invalid request'}), 400
 
+# Add money route
+@app.route('/add_money', methods=['POST'])
+def add_money():
+    user_id = get_logged_in_user_id()
+
+    if user_id is not None:
+        data = request.get_json()
+        amount = data.get('amount')
+
+        # Validate the entered amount (optional, can be done client-side as well)
+        if not amount:
+            return jsonify({'success': False, 'message': 'Please enter a valid amount.'}), 400
+
+        try:
+            # Convert the amount to a decimal value for storage in the earnings table
+            decimal_amount = float(amount.replace(',', '').replace('.', '')) / 100
+
+            # Insert the amount into the earnings table
+            query = "INSERT INTO earnings (amount, user_id) VALUES (%s, %s)"
+            cursor.execute(query, (decimal_amount, user_id))
+            db.commit()
+
+            return jsonify({'success': True, 'message': 'Amount added successfully'})
+        except Exception as e:
+            print("Error adding amount to earnings:", e)
+            return jsonify({'success': False, 'message': 'An error occurred while adding the amount.'}), 500
+
+    # User is not logged in
+    return jsonify({'success': False, 'message': 'User not logged in.'}), 401
+
 # Analytics route
 @app.route('/analytics')
 def analytics():

@@ -1,25 +1,49 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<style>
-  .user-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 5px;
-  }
 
-  .user-item button {
-    margin-left: 10px;
-  }
-  
+<style>
+
+.delete-wallet-btn {
+  background-color: #ff0000;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  padding: 10px 20px;
+  margin-right: 10px;
+}
+
+.btn-focus:focus {
+    outline: none;
+}
+
+.delete-user-btn {
+  background-color: #ff0000;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-right: 10px;
+}
+
+.add-user-btn {
+  background-color: #2b82c9;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  padding: 5px 10px;
+  margin-right: 10px;
+}
+
 </style>
 
 <div class="container">
     <!-- Wallet Details -->
     <h2 class="mt-5">{{ wallet.name }}</h2>
     {% if is_owner %}
-    <button class="btn btn-danger ms-3" onclick="showDeleteWalletConfirmation('{{ wallet.wallet_id }}')">Delete Wallet</button>
+    <button class="delete-wallet-btn btn-focus" onclick="showDeleteWalletConfirmation('{{ wallet.wallet_id }}')">Delete Wallet</button>
     {% endif %}
     <!-- Filter Menu Bar -->
     <div class="row mt-4">
@@ -78,7 +102,7 @@
           <h5 class="card-title mb-0">Users in this wallet</h5>
           <div>
               {% if is_owner %}
-              <button class="btn btn-primary" onclick="showAddUserDialog()">Add user</button>
+              <button class="add-user-btn btn-focus" onclick="showAddUserDialog()">Add user</button>
               {% endif %}
           </div>
       </div>
@@ -88,7 +112,7 @@
             <div class="user-item d-flex justify-content-between align-items-center">
               <div>{{ shared_user }}</div>
               {% if is_owner %}
-              <button class="btn btn-danger" onclick="showDeleteUserConfirmation('{{ shared_user }}')">Delete</button>
+              <button class="delete-user-btn btn-focus" onclick="showDeleteUserConfirmation('{{ shared_user }}')">Delete</button>
               {% endif %}
             </div>
           {% endfor %}
@@ -109,7 +133,7 @@
         <input type="email" id="userEmail" class="form-control" placeholder="Enter email">
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-primary" onclick="addUser()">Send</button>
+        <button type="button" onclick="addUser()">Add</button>
       </div>
     </div>
   </div>
@@ -129,7 +153,7 @@
         </select>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-primary" onclick="applyFilter()">Apply</button>
+        <button type="button" onclick="applyFilter()">Apply</button>
       </div>
     </div>
   </div>
@@ -273,57 +297,64 @@ function showDeleteUserConfirmation(userEmail) {
     }
 
     function showAddUserDialog() {
-      $('#addUserDialog').modal('show');
-    }
-
-    function addUser() {
-      const userEmail = document.getElementById('userEmail').value;
-      const walletId = '{{ wallet_id }}';
-
-       // Check if the email field is empty
-    if (userEmail.trim() === '') {
-      // Display an error message using SweetAlert
       Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Email is required'
-      });
-      return;
-    }
+        title: 'Add User',
+        html: '<input type="email" id="swalUserEmail" class="form-control" placeholder="Enter email">',
+        showCancelButton: true,
+        confirmButtonText: 'Add',
+        cancelButtonText: 'Cancel',
+        preConfirm: function() {
+          const userEmail = document.getElementById('swalUserEmail').value;
+          const walletId = '{{ wallet_id }}';
 
-      // Send the request to add the user
-      fetch('/add_user', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          email: userEmail,
-          wallet_id: walletId  // Include the wallet ID in the request JSON
+        // Check if the email field is empty
+        if (userEmail.trim() === '') {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Email is required'
+          });
+          return false; // Prevent the dialog from closing when validation fails
+        }
+
+        // Send the request to add the user
+        return fetch('/add_user', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email: userEmail,
+            wallet_id: walletId
+          })
         })
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.message === 'User added successfully') {
-          // Refresh the page or update the user list
-          window.location.reload();
-        } else {
-          // Display an error message using SweetAlert
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: data.message
+        .then(response => response.json())
+        .then(data => {
+          if (data.message === 'User added successfully') {
+            // Show a success message
+            Swal.fire({
+              icon: 'success',
+              title: 'Success',
+              text: 'User added successfully.'
+            }).then(function() {
+              // Refresh the page or update the user list
+              window.location.reload();
+            });
+          } else {
+            // Show an error message
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: data.message
+            });
+          }
+        })
+        .catch(error => {
+          console.log('Error:', error);
         });
       }
-    })
-      .catch(error => {
-        console.log('Error:', error);
-      })
-      .finally(() => {
-      // Clear the email field
-      document.getElementById('userEmail').value = '';
-      });
-    }
+    });
+  }
 
     function getDistinctItems(column) {
       // Implement logic to retrieve distinct items for the selected column

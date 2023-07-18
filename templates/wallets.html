@@ -1,12 +1,47 @@
 {% extends 'base.html' %}
 
 {% block content %}
+
+<style>
+  .popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    border: 1px solid #ccc;
+    padding: 20px;
+    z-index: 9999;
+    display: none;
+  }
+
+  .close-button {
+    margin-top: 10px;
+  }
+
+  .error-message {
+    color: red;
+  }
+
+  .character-counter {
+    font-size: 12px;
+    color: gray;
+  }
+
+  .swal2-input {
+    width: 90%;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+</style>
+
 <div class="container">
 
   <!-- Wallets -->
   <div class="wallets-container">
     <!-- Add Wallet Button -->
-    <button onclick="showAddWalletPopup()" class="add-wallet-button wallet-name">Add new wallet</button>
+    <button onclick="showAddWalletPopup()" class="add-wallet-button wallet-name btn-focus">Add new wallet</button>
 
     {% for wallet in wallets %}
     <a href="{{ url_for('wallet_details', wallet_name=wallet[1]) }}" class="wallet-card">
@@ -19,65 +54,84 @@
   <div id="addWalletPopup" class="popup">
     <form id="addWalletForm" action="/wallets" method="post">
       <div>
-        <input type="text" id="walletName" name="walletName" required maxlength="50" placeholder="Enter wallet name" oninput="updateCharacterCounter()">
-        <span id="characterCounter" class="character-counter">Max: 50</span>
+        <input type="text" id="walletName" name="walletName" required maxlength="37" placeholder="Enter wallet name">
       </div>
       <small id="walletNameError" class="error-message"></small><br><br>
       <input type="submit" value="Add Wallet">
-      <button type="button" onclick="cancelAddWallet()" class="add-wallet-button">Cancel</button>
-    </form>
+      <button type="button" onclick="cancelAddWallet()">Cancel</button>
+    </form> 
   </div>
 
   <!-- Error Popup -->
   <div id="errorPopup" class="popup">
     <div id="addWalletErrorMessage" class="text-danger"></div>
-    <button onclick="closeErrorPopup()" class="close-button">Close</button>
+    <button onclick="closeErrorPopup()">Close</button>
   </div>
-
-  <style>
-    .popup {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background-color: white;
-      border: 1px solid #ccc;
-      padding: 20px;
-      z-index: 9999;
-      display: none;
-    }
-
-    .close-button {
-      margin-top: 10px;
-    }
-
-    .error-message {
-      color: red;
-    }
-
-    .character-counter {
-      font-size: 12px;
-      color: gray;
-    }
-  </style>
-
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.18/dist/sweetalert2.all.min.js"></script>
   <script>
+
     function showAddWalletPopup() {
-      var addWalletPopup = document.getElementById("addWalletPopup");
-      addWalletPopup.style.display = "block";
-    }
+    // Reset the form and character counter
+    var walletNameInput = document.getElementById("walletName");
+    walletNameInput.value = '';
+
+    // Use SweetAlert to show the "Add Wallet" popup
+    Swal.fire({
+      title: 'New wallet',
+      html: '<input type="text" id="swalWalletName" class="swal2-input" placeholder="Enter wallet name" maxlength="37">',
+      showCancelButton: true,
+      confirmButtonText: 'Add',
+      preConfirm: function() {
+        var walletName = document.getElementById('swalWalletName').value;
+        if (!walletName) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Please enter a wallet name.'
+          });
+          return false;
+        }
+
+        // Manually handle form submission
+        var formData = new FormData();
+        formData.append('walletName', walletName);
+        fetch("/wallets", {
+          method: "POST",
+          body: formData
+        })
+          .then(function(response) {
+            if (!response.ok) {
+              return response.json().then(function(data) {
+                throw new Error(data.message);
+              });
+            }
+          })
+          .then(function() {
+            // Wallet added successfully, show success message
+            Swal.fire({
+              icon: 'success',
+              title: 'Success',
+              text: 'Wallet added successfully.'
+            }).then(function() {
+              // Refresh the page to see the updated list
+              window.location.reload();
+            });
+          })
+          .catch(function(error) {
+            // Handle the error response and show it in SweetAlert
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: error.message
+            });
+          });
+      }
+    });
+  }
 
     function cancelAddWallet() {
       var addWalletPopup = document.getElementById("addWalletPopup");
       addWalletPopup.style.display = "none";
-    }
-
-    function updateCharacterCounter() {
-      var walletNameInput = document.getElementById("walletName");
-      var characterCounter = document.getElementById("characterCounter");
-      var remainingCharacters = 50 - walletNameInput.value.length;
-      characterCounter.textContent = remainingCharacters;
     }
 
     document.getElementById("addWalletForm").addEventListener("submit", function(event) {
@@ -96,7 +150,8 @@
       })
         .then(function(response) {
           if (response.ok) {
-            // Wallet added successfully, refresh the page to see the updated list
+            // Wallet added successfully
+            // Refresh the page to see the updated list
             window.location.reload();
           } else {
             // Handle the error response
@@ -109,6 +164,14 @@
               });
             });
           }
+        })
+        .then(function() {
+          // Show success message after the page has been refreshed
+          Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: 'Wallet added successfully.'
+          });
         })
         .catch(function(error) {
           // Handle any network or other errors
