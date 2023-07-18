@@ -366,7 +366,6 @@ def delete_user():
     # User email or wallet ID not provided
     return jsonify({'message': 'Invalid request'}), 400
 
-# Add money route
 @app.route('/add_money', methods=['POST'])
 def add_money():
     user_id = get_logged_in_user_id()
@@ -380,11 +379,11 @@ def add_money():
             return jsonify({'success': False, 'message': 'Please enter a valid amount.'}), 400
 
         try:
-            # Convert the amount to a decimal value for storage in the earnings table
+            # Convert the amount to a decimal value for storage in the transactions table
             decimal_amount = float(amount.replace(',', '').replace('.', '')) / 100
 
-            # Insert the amount into the earnings table
-            query = "INSERT INTO earnings (amount, user_id) VALUES (%s, %s)"
+            # Insert the amount into the transactions table with 'income' as the transaction_type
+            query = "INSERT INTO transactions (amount, transaction_type, user_id) VALUES (%s, 'income', %s)"
             cursor.execute(query, (decimal_amount, user_id))
             db.commit()
 
@@ -392,6 +391,28 @@ def add_money():
         except Exception as e:
             print("Error adding amount to earnings:", e)
             return jsonify({'success': False, 'message': 'An error occurred while adding the amount.'}), 500
+
+    # User is not logged in
+    return jsonify({'success': False, 'message': 'User not logged in.'}), 401
+
+@app.route('/get_balance', methods=['GET'])
+def get_balance():
+    user_id = get_logged_in_user_id()
+
+    if user_id is not None:
+        try:
+            # Fetch the current balance for the logged-in user from the transactions table
+            query = "SELECT IFNULL(SUM(CASE WHEN transaction_type = 'income' THEN amount ELSE -amount END), 0) AS balance FROM transactions WHERE user_id = %s"
+            cursor.execute(query, (user_id,))
+            result = cursor.fetchone()
+
+            # Access the 'balance' value from the fetched tuple using index 0
+            balance = float(result[0])
+
+            return jsonify({'success': True, 'balance': balance})
+        except Exception as e:
+            print("Error fetching balance:", e)
+            return jsonify({'success': False, 'message': 'An error occurred while fetching the balance.'}), 500
 
     # User is not logged in
     return jsonify({'success': False, 'message': 'User not logged in.'}), 401

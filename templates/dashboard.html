@@ -91,15 +91,17 @@
   <div class="row mt-5">
     <!-- Square 1 -->
     <div class="col-md-6 col-lg-6 mb-3">
-      <div class="card border-0 wallet-card" style="background-color: #FFC107; height: 150px;">
+      <div class="card border-0 wallet-card" style="background-color: #eeeeee; height: 150px;">
         <div class="card-body">
-          <!-- Square 1 content -->
+          <h4 class="card-title">Current Balance</h4>
+          <!-- Update the ID to match "balance" instead of "current-balance" -->
+          <h2 id="balance" style="font-size: 36px; font-weight: bold; text-align: center;">Loading...</h2>
         </div>
       </div>
     </div>
     <!-- Square 2 -->
     <div class="col-md-6 col-lg-6 mb-3">
-      <div class="card border-0 wallet-card" style="background-color: #17A2B8; height: 150px;">
+      <div class="card border-0 wallet-card" style="background-color: #eeeeee; height: 150px;">
         <div class="card-body">
           <!-- Square 2 content -->
         </div>
@@ -142,9 +144,33 @@
   </div>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.20/dist/sweetalert2.all.min.js"></script>  
   <script>
+
+    // Function to fetch the current balance for the logged-in user from the server
+    function updateBalance() {
+      fetch('/get_balance', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            document.getElementById('balance').innerText = '$' + data.balance.toFixed(2);
+          } else {
+            console.error('Error fetching balance:', data.message);
+          }
+        })
+        .catch((error) => {
+          console.error('Error:', error);
+        });
+    }
+
+    // Call the updateBalance function to initially fetch and display the balance
+    updateBalance();
+
     // Function to display the pop-up dialog using SweetAlert
     function showAddMoneyDialog() {
-      
       Swal.fire({
         title: 'Enter amount',
         input: 'text',
@@ -159,13 +185,11 @@
         cancelButtonText: 'Cancel',
         inputValue: '0.00', // Initial value
         didOpen: () => {
-          // Add 'input' event listener to handle real-time formatting
           const amountInput = Swal.getInput();
           amountInput.addEventListener('input', formatAmountInput);
           amountInput.addEventListener('keydown', restrictAmountLength);
         },
         willClose: () => {
-          // Remove the 'input' event listener when the dialog is closed
           const amountInput = Swal.getInput();
           amountInput.removeEventListener('input', formatAmountInput);
           amountInput.removeEventListener('keydown', restrictAmountLength);
@@ -174,8 +198,7 @@
         if (result.isConfirmed) {
           const enteredAmount = result.value;
           const formattedAmount = formatAmountWithCommas(enteredAmount);
-
-          handleAddButtonClick(formattedAmount); // Call the handleAddButtonClick function
+          handleAddButtonClick(formattedAmount);
         }
       });
     }
@@ -186,16 +209,11 @@
       const enteredAmount = amountInput.value;
   
       if (enteredAmount.trim() === '') {
-        return; // Don't do anything if the input is empty
+        return;
       }
   
-      // Remove all non-digit characters from the entered amount
       const numericValue = enteredAmount.replace(/[^\d]/g, '');
-  
-      // Convert the numeric value to cents and add the decimal point
       const formattedAmount = (numericValue / 100).toFixed(2);
-  
-      // Update the input field value with the formatted amount
       amountInput.value = formatAmountWithCommas(formattedAmount);
     }
     
@@ -207,52 +225,50 @@
     }
 
     // Function to restrict the amount input length to 9 characters
-  function restrictAmountLength(event) {
-    const amountInput = event.target;
-    const numericValue = amountInput.value.replace(/[^\d]/g, '');
+    function restrictAmountLength(event) {
+      const amountInput = event.target;
+      const numericValue = amountInput.value.replace(/[^\d]/g, '');
 
-    // If the numeric value has reached or exceeded 9 characters, prevent further input
-    if (numericValue.length >= 9) {
-      event.preventDefault();
-    }
-  }
-
-  // Function to handle the "Add" button click and save the amount to the server
-  function handleAddButtonClick(amount) {
-    const amountInput = amount;
-
-    if (!amountInput || amountInput <=0) {
-      Swal.fire('Error', 'Please enter a valid amount.', 'error');
-      return;
+      if (numericValue.length >= 9) {
+        event.preventDefault();
+      }
     }
 
-    // Send the entered amount to the server using a fetch request
-    fetch('/add_money', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ amount: amountInput }),
-    })
-      .then((response) => response.json())
-      .then((data) => {
+    // Function to handle the "Add" button click and save the amount to the server
+    function handleAddButtonClick(amount) {
+      const amountInput = amount;
 
-        if (data.success) {
-          Swal.fire('Success', 'Amount added successfully.', 'success');
-        } else {
-          Swal.fire('Error', data.message, 'error');
-        }
+      if (!amountInput || amountInput <= 0) {
+        Swal.fire('Error', 'Please enter a valid amount.', 'error');
+        return;
+      }
+
+      fetch('/add_money', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ amount: amountInput }),
       })
-      .catch((error) => {
-        Swal.fire('Error', 'An error occurred while adding the amount.', 'error');
-        console.error('Error:', error);
-      });
-  }
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            Swal.fire('Success', 'Amount added successfully.', 'success');
+            updateBalance(); // Update the displayed balance after adding the amount
+          } else {
+            Swal.fire('Error', data.message, 'error');
+          }
+        })
+        .catch((error) => {
+          Swal.fire('Error', 'An error occurred while adding the amount.', 'error');
+          console.error('Error:', error);
+        });
+    }
 
-  function closeAddMoneyDialog() {
-  const addMoneyDialog = document.getElementById('add-money-dialog');
-  addMoneyDialog.style.display = 'none';
-  }
+    function closeAddMoneyDialog() {
+      const addMoneyDialog = document.getElementById('add-money-dialog');
+      addMoneyDialog.style.display = 'none';
+    }
   </script>
   <!-- The Add Money Dialog -->
   <div id="add-money-dialog" class="dialog">
