@@ -2,9 +2,21 @@
 from flask import Flask, render_template, request, jsonify, session
 from flask import redirect, url_for
 import jwt
+from functools import wraps
 from datetime import datetime, timedelta
 import mysql.connector
 import bcrypt
+
+# Custom decorator to check if the user is logged in
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        token = session.get('token')
+        if not token:
+            # Redirect to the login page if the token is missing
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 # Create a Flask app
 app = Flask(__name__)
@@ -20,16 +32,6 @@ db = mysql.connector.connect(
 )
 
 cursor = db.cursor()
-
-# Function to check if the user is logged in
-def check_login():
-    if not get_logged_in_user_id():
-        return redirect(url_for('login'))
-
-# Register the before_request function to run before each request
-@app.before_request
-def before_request():
-    check_login()
 
 # Function to get logged-in user's ID
 def get_logged_in_user_id():
@@ -133,6 +135,7 @@ def login():
 
 # Dashboard route
 @app.route('/dashboard')
+@login_required
 def dashboard():
     user_id = get_logged_in_user_id()
 
@@ -141,18 +144,9 @@ def dashboard():
     else:
         return render_template('login.html')
 
-# Expenses route
-@app.route('/expenses')
-def expenses():
-    user_id = get_logged_in_user_id()
-
-    if user_id is not None:
-        return render_template('expenses.html')
-    else:
-        return render_template('login.html')
-
 # Wallets route
 @app.route('/wallets', methods=['GET', 'POST'])
+@login_required
 def wallets():
     user_id = get_logged_in_user_id()
 
