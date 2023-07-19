@@ -20,7 +20,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            background-color: #f0f0f0;
+            background-color: #F8D775;
             height: 300px;
             border-radius: 8px;
             text-decoration: none;
@@ -30,6 +30,7 @@
 
         .wallet-name {
             font-size: 24px;
+            color: #ffffff;
         }
 
         .add-wallet-button {
@@ -211,9 +212,6 @@
                     <li class="nav-item">
                         <a class="nav-link {% if active_page == 'dashboard' %}active{% endif %}"
                             href="/dashboard">Dashboard</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if active_page == 'expenses' %}active{% endif %}" href="/expenses">Expenses</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if active_page == 'wallets' %}active{% endif %}" href="/wallets">Wallets</a>

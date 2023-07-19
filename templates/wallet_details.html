@@ -43,7 +43,7 @@
     <!-- Wallet Details -->
     <h2 class="mt-5">{{ wallet.name }}</h2>
     {% if is_owner %}
-    <button class="delete-wallet-btn btn-focus" onclick="showDeleteWalletConfirmation('{{ wallet.wallet_id }}')">Delete Wallet</button>
+    <button class="delete-wallet-btn btn-focus" onclick="showDeleteWalletConfirmation('{{ wallet.wallet_id }}')">Delete wallet</button>
     {% endif %}
     <!-- Filter Menu Bar -->
     <div class="row mt-4">
@@ -53,10 +53,8 @@
         <div class="mb-3">
           <div class="btn-group">
             <button class="btn btn-outline-secondary" onclick="openFilterDialog('name')">Name</button>
-            <button class="btn btn-outline-secondary" onclick="openFilterDialog('category')">Category</button>
-            <button class="btn btn-outline-secondary" onclick="openFilterDialog('date')">Date</button>
             <button class="btn btn-outline-secondary" onclick="openFilterDialog('type')">Type</button>
-            <button class="btn btn-outline-secondary" onclick="openFilterDialog('place')">Place</button>
+            <button class="btn btn-outline-secondary" onclick="openFilterDialog('date')">Date</button>
             <button class="btn btn-outline-secondary" onclick="openFilterDialog('user')">User</button>
           </div>
         </div>
@@ -68,12 +66,9 @@
               <tr>
                 <th></th> <!-- Checkbox column -->
                 <th onclick="sortExpenses('name')">Name</th>
-                <th onclick="sortExpenses('category')">Category</th>
-                <th onclick="sortExpenses('type')">Type</th>
                 <th onclick="sortExpenses('amount')">Amount</th>
+                <th onclick="sortExpenses('type')">Type</th>
                 <th onclick="sortExpenses('date')">Date</th>
-                <th onclick="sortExpenses('place')">Place</th>
-                <th onclick="sortExpenses('description')">Description</th>
                 <th onclick="sortExpenses('user')">User</th>
               </tr>
             </thead>
@@ -82,12 +77,9 @@
               <tr>
                 <td><input type="checkbox"></td>
                 <td>{{ expense.name }}</td>
-                <td>{{ expense.category }}</td>
-                <td>{{ expense.type }}</td>
                 <td>{{ expense.amount }}</td>
+                <td>{{ expense.type }}</td>
                 <td>{{ expense.date }}</td>
-                <td>{{ expense.place }}</td>
-                <td>{{ expense.description }}</td>
                 <td>{{ expense.user }}</td>
               </tr>
               {% endfor %}

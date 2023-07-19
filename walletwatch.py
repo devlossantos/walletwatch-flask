@@ -101,6 +101,27 @@ def login():
                 token = jwt.encode({'user_id': user_id, 'exp': datetime.utcnow() + timedelta(minutes=30)}, app.config['SECRET_KEY'])
                 session['token'] = token
 
+                # Check if the user has a wallet named "Main"
+                query = "SELECT * FROM wallets WHERE user_id = %s AND name = %s"
+                cursor.execute(query, (user_id, "Main"))
+                main_wallet = cursor.fetchone()
+
+                if not main_wallet:
+                    # If the user doesn't have a wallet named "Main", create one for them
+
+                    # Insert the new wallet into the wallets table
+                    query = "INSERT INTO wallets (name, status, user_id) VALUES (%s, 'Active', %s)"
+                    cursor.execute(query, ("Main", user_id))
+                    db.commit()
+
+                    # Get the wallet_id of the newly created wallet
+                    wallet_id = cursor.lastrowid
+
+                    # Insert the new wallet into the wallets_users table
+                    query = "INSERT INTO wallets_users (wallet_id, user_id) VALUES (%s, %s)"
+                    cursor.execute(query, (wallet_id, user_id))
+                    db.commit()
+
                 return jsonify({'token': token}), 200
                          
             return jsonify({'message': 'Invalid email or password'}), 401
@@ -188,15 +209,29 @@ def get_wallets():
         FROM wallets AS w 
         LEFT JOIN wallets_users AS u ON w.wallet_id = u.wallet_id
         WHERE w.user_id = %s OR u.user_id = %s
-        ORDER BY w.created_at DESC
+        ORDER BY w.name = 'Main' DESC, w.created_at DESC
         """
         try:
             cursor.execute(query, (user_id, user_id))
             wallets = cursor.fetchall()
+            
+            # Find the index of the "Main" wallet, if it exists
+            main_wallet_index = None
+            for i, wallet in enumerate(wallets):
+                if wallet[1] == 'Main':
+                    main_wallet_index = i
+                    break
+
+            if main_wallet_index is not None:
+                # Move the "Main" wallet to the first position in the list
+                main_wallet = wallets.pop(main_wallet_index)
+                wallets.insert(0, main_wallet)
+
             return wallets
         except Exception as e:
             print("Error executing SQL query:", e)
             return []
+
     else:
         return render_template('login.html')
 
@@ -416,18 +451,6 @@ def get_balance():
 
     # User is not logged in
     return jsonify({'success': False, 'message': 'User not logged in.'}), 401
-
-# Analytics route
-@app.route('/analytics')
-def analytics():
-    # Add your code for the analytics functionality here
-    return render_template('analytics.html')
-
-# Settings route
-@app.route('/settings')
-def settings():
-    # Add your code for the settings functionality here
-    return render_template('settings.html')     
 
 # Logout route
 @app.route('/logout')
