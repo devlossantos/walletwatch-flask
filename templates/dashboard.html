@@ -44,7 +44,7 @@
     padding: 10px 20px;
     border-radius: 5px;
     cursor: pointer;
-    margin-top: 70px;
+    margin-top: 10px;
   }
 
   .dialog {
@@ -55,31 +55,6 @@
     top: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-  }
-
-  .dialog-content {
-    background-color: #fff;
-    margin: 15% auto;
-    padding: 20px;
-    border: 1px solid #888;
-    width: 300px;
-    text-align: center;
-    border-radius: 5px;
-  }
-
-  .swal2-content {
-    text-align: center;
-  }
-
-  .swal2-add-money .swal2-title {
-    font-size: 48px;
-    text-align: center;
-    margin-bottom: 20px;
-  }
-
-  .swal2-add-money .swal2-content {
-    text-align: center;
   }
 
   .swal2-add-money .swal2-input {
@@ -89,23 +64,6 @@
     border-radius: 4px;
     outline: none;
     text-align: center;
-    caret-color: transparent;
-  }
-
-  .swal2-add-expense .swal2-title {
-    font-size: 48px;
-    text-align: center;
-    margin-bottom: 20px;
-  }
-
-  .swal2-add-expense .swal2-input {
-    font-size: 48px;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    outline: none;
-    text-align: center;
-    caret-color: transparent;
   }
 
   .swal2-select {
@@ -115,49 +73,14 @@
     border-radius: 4px;
     outline: none;
     appearance: none;
-    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>');
-    background-repeat: no-repeat;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 0 0" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>');
     background-position: right 10px center;
-    background-size: 14px;
+    background-size: 10px;
   }
 
   .swal2-popup .swal2-title {
     font-size: 20px;
     font-weight: bold;
-    color: #333;
-    margin-bottom: 15px;
-  }
-
-  .swal2-popup .swal2-input-container {
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 15px;
-  }
-
-  .swal2-popup .swal2-confirm {
-    background-color: #007bff;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    padding: 10px 20px;
-    cursor: pointer;
-    font-size: 18px;
-  }
-
-  .swal2-popup .swal2-cancel {
-    background-color: #dc3545;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    padding: 10px 20px;
-    cursor: pointer;
-    font-size: 18px;
-    margin-right: 10px;
-  }
-
-  .swal2-popup .swal2-confirm:focus,
-  .swal2-popup .swal2-cancel:focus {
-    outline: none;
   }
 
   .btn-focus:focus {
@@ -219,12 +142,13 @@
     </div>
     <div class="col-12 text-center">
       <button class="add-money-btn btn-focus" onclick="showAddMoneyDialog()">Add money</button>
-      <button class="add-expense-btn btn-focus" onclick="showAddExpenseDialog()">Add expense</button>
+      <button class="add-expense-btn btn-focus" onclick="fetchAndShowAddExpenseDialog()">Add expense</button>
     </div>
   </div>
+
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.20/dist/sweetalert2.all.min.js"></script>  
   <script>
-
+  
     // Function to fetch the current balance for the logged-in user from the server
     function updateBalance() {
       fetch('/get_balance', {
@@ -259,14 +183,14 @@
           required: true,
           type: 'text',
           pattern: '^\\d{1,3}(,\\d{3})*(\\.\\d{2})?$',
-          // pattern ensures valid format like 1,350.54
+          // pattern ensures valid format
         },
         showCancelButton: true,
         confirmButtonText: 'Add',
         cancelButtonText: 'Cancel',
         inputValue: '0.00', // Initial value
         customClass: {
-          container: 'swal2-add-money', // Use the custom class for the Add Money dialog
+          container: 'swal2-add-money',
         },
         didOpen: () => {
           const amountInput = Swal.getInput();
@@ -355,20 +279,26 @@
     }
 
     // Function to handle the "Add Expense" button click and save the expense to the server
-    function handleAddExpenseClick(amount, name, wallet, type) {
-      const expenseData = {
-        amount: amount,
-        name: name,
-        wallet: wallet,
-        type: type,
-      };
+    function handleAddExpenseClick() {
+      const amountInput = document.getElementById('expense-amount-input').value;
+      const nameInput = document.getElementById('name-input').value;
+      const typeInput = document.getElementById('expense-type-input').value;
+
+      if (!amountInput || amountInput <= 0 || !nameInput || !typeInput) {
+        Swal.fire('Error', 'Please enter a valid amount, name, and type.', 'error');
+        return;
+      }
 
       fetch('/add_expense', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(expenseData),
+        body: JSON.stringify({
+          amount: amountInput,
+          name: nameInput,
+          type: typeInput,
+        }),
       })
         .then((response) => response.json())
         .then((data) => {
@@ -385,54 +315,76 @@
         });
     }
 
-  // Function to display the "Add Expense" dialog using SweetAlert
-  function showAddExpenseDialog() {
-    Swal.fire({
-      title: 'Add Expense',
-      html:
-        '<div class="swal2-input-container">' +
-        '  <input id="amount-input" type="text" placeholder="Amount" required pattern="^\\d{1,3}(,\\d{3})*(\\.\\d{2})?$" class="swal2-input">' +
-        '  <input id="name-input" type="text" placeholder="Name" required class="swal2-input">' +
-        '</div>' +
-        '<div class="swal2-input-container">' +
-        '  <select id="type-input" required class="swal2-select">' +
-        '    <option value="type1">Type 1</option>' +
-        '    <option value="type2">Type 2</option>' +
-        '    <option value="type3">Type 3</option>' +
-        '  </select>' +
-        '  <select id="wallet-input" required class="swal2-select">' +
-        '    <option value="wallet1">Wallet 1</option>' +
-        '    <option value="wallet2">Wallet 2</option>' +
-        '    <option value="wallet3">Wallet 3</option>' +
-        '  </select>' +
-        '</div>',
-      showCancelButton: true,
-      confirmButtonText: 'Add',
-      cancelButtonText: 'Cancel',
-      customClass: {
-        container: 'swal2-add-expense',
-      },
-      didOpen: () => {
-        const amountInput = Swal.getPopup().querySelector('#amount-input');
-        amountInput.addEventListener('input', formatAmountInput);
-        amountInput.addEventListener('keydown', restrictAmountLength);
-      },
-      willClose: () => {
-        const amountInput = Swal.getPopup().querySelector('#amount-input');
-        amountInput.removeEventListener('input', formatAmountInput);
-        amountInput.removeEventListener('keydown', restrictAmountLength);
-      },
-      preConfirm: () => {
-        const amount = Swal.getPopup().querySelector('#amount-input').value;
-        const name = Swal.getPopup().querySelector('#name-input').value;
-        const wallet = Swal.getPopup().querySelector('#wallet-input').value;
-        const type = Swal.getPopup().querySelector('#type-input').value;
-        handleAddExpenseClick(amount, name, wallet, type);
-      },
-    });
-  }
+    // Function to show the "Add Expense" dialog
+    function showAddExpenseDialog() {
+          Swal.fire({
+            title: 'Add Expense',
+            html:
+              '<input id="expense-amount-input" type="text" placeholder="Amount" required pattern="^\\d{1,3}(,\\d{3})*(\\.\\d{2})?$" class="swal2-input">' +
+              '<input id="name-input" type="text" placeholder="Name" required class="swal2-input">' +
+              '<select id="expense-type-input" required class="swal2-select">' +
+              '<option value="">Select type</option>' +
+              '</select>',
+            showCancelButton: true,
+            confirmButtonText: 'Add',
+            cancelButtonText: 'Cancel',
+            preConfirm: () => {
+              const amountInput = document.getElementById('expense-amount-input').value;
+              const nameInput = document.getElementById('name-input').value;
+              const typeInput = document.getElementById('expense-type-input').value;
+              return { amountInput, nameInput, typeInput };
+            },
+          }).then((result) => {
+            if (result.isConfirmed) {
+              const { amountInput, nameInput, typeInput } = result.value;
+              handleAddExpenseClick(amountInput, nameInput, typeInput);
+            }
+          });
+    }
+
+    // Function to fetch the expense types from the server and show the "Add Expense" dialog
+    function fetchAndShowAddExpenseDialog() {
+      fetch('/get_expense_types', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            // Populate the dropdown options with the retrieved expense types
+            const names = data.names;
+
+            const expenseTypeInput = document.getElementById('expense-type-input');
+            names.forEach((type) => {
+              const option = document.createElement('option');
+              option.value = type;
+              option.textContent = type;
+
+              expenseTypeInput.appendChild(option);
+
+            });
+
+            // Show the "Add Expense" dialog with the updated options
+            showAddExpenseDialog();
+
+          } else {
+            console.error('Error fetching expense types:', data.message);
+          }
+        })
+        .catch((error) => {
+          console.error('Error:', error);
+        });
+    }
+
+    // Function to close the "Add Expense" dialog
+    function closeAddExpenseDialog() {
+      Swal.close();
+    }
 
   </script>
+  
   <!-- The Add Money Dialog -->
   <div id="add-money-dialog" class="dialog">
     <div class="dialog-content">
@@ -441,5 +393,18 @@
       <button onclick="closeAddMoneyDialog()">Cancel</button>
     </div>
   </div>
+
+<!-- The Add Expense Dialog -->
+<div id="add-expense-dialog" class="dialog">
+  <div class="dialog-content">
+    <input id="expense-amount-input" type="text" placeholder="Amount" required pattern="^\d{1,3}(,\d{3})*(\.\d{2})?$" class="swal2-input">
+    <input id="name-input" type="text" placeholder="Name" required class="swal2-input">
+    <select id="expense-type-input" required class="swal2-select">
+      <!-- The types will be populated dynamically from the backend using JavaScript -->
+    </select>
+    <button onclick="handleAddExpenseClick()">Add</button>
+    <button onclick="closeAddExpenseDialog()">Cancel</button>
+  </div>
 </div>
+
 {% endblock %}

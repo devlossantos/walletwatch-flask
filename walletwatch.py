@@ -446,6 +446,19 @@ def get_balance():
     # User is not logged in
     return jsonify({'success': False, 'message': 'User not logged in.'}), 401
 
+# Endpoint to retrieve types data from the "types" table
+@app.route('/get_expense_types', methods=['GET'])
+def get_names():
+    try:
+        # Fetch the names from the "types" table
+        query = "SELECT name FROM types"
+        cursor.execute(query)
+        names = [type_info[0] for type_info in cursor.fetchall()]
+
+        return jsonify({"success": True, "names": names})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+
 # Logout route
 @app.route('/logout')
 def logout():
