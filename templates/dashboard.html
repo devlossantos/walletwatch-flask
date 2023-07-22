@@ -148,7 +148,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.20/dist/sweetalert2.all.min.js"></script>  
   <script>
-  
     // Function to fetch the current balance for the logged-in user from the server
     function updateBalance() {
       fetch('/get_balance', {
@@ -261,8 +260,8 @@
         .then((response) => response.json())
         .then((data) => {
           if (data.success) {
-            Swal.fire('Success', 'Amount added successfully.', 'success');
             updateBalance(); // Update the displayed balance after adding the amount
+            Swal.fire('Success', 'Amount added successfully.', 'success');
           } else {
             Swal.fire('Error', data.message, 'error');
           }
@@ -337,12 +336,13 @@
           }).then((result) => {
             if (result.isConfirmed) {
               const { amountInput, nameInput, typeInput } = result.value;
-              handleAddExpenseClick(amountInput, nameInput, typeInput);
+              handleAddExpenseClick();
             }
           });
     }
 
     // Function to fetch the expense types from the server and show the "Add Expense" dialog
+    
     function fetchAndShowAddExpenseDialog() {
       fetch('/get_expense_types', {
         method: 'GET',
@@ -355,13 +355,12 @@
           if (data.success) {
             // Populate the dropdown options with the retrieved expense types
             const names = data.names;
-
             const expenseTypeInput = document.getElementById('expense-type-input');
+
             names.forEach((type) => {
               const option = document.createElement('option');
               option.value = type;
               option.textContent = type;
-
               expenseTypeInput.appendChild(option);
 
             });
@@ -400,7 +399,6 @@
     <input id="expense-amount-input" type="text" placeholder="Amount" required pattern="^\d{1,3}(,\d{3})*(\.\d{2})?$" class="swal2-input">
     <input id="name-input" type="text" placeholder="Name" required class="swal2-input">
     <select id="expense-type-input" required class="swal2-select">
-      <!-- The types will be populated dynamically from the backend using JavaScript -->
     </select>
     <button onclick="handleAddExpenseClick()">Add</button>
     <button onclick="closeAddExpenseDialog()">Cancel</button>

@@ -46,6 +46,7 @@ def get_logged_in_user_id():
     return None
 
 @app.route('/')
+@login_required
 def home():
     return render_template('dashboard.html')   
 
@@ -230,6 +231,7 @@ def get_wallets():
         return render_template('login.html')
 
 @app.route('/wallets/<string:wallet_name>', methods=['GET', 'POST'])
+@login_required
 def wallet_details(wallet_name):
     user_id = get_logged_in_user_id()
     wallet = get_wallet_by_name(wallet_name)
@@ -248,6 +250,7 @@ def wallet_details(wallet_name):
     return redirect(url_for('login'))
 
 @app.route('/delete_wallet', methods=['POST'])
+@login_required
 def delete_wallet():
     wallet_id = request.json.get('wallet_id')
 
@@ -316,6 +319,7 @@ def get_wallet_by_name(wallet_name):
 
 # Add User route
 @app.route('/add_user', methods=['POST'])
+@login_required
 def add_user():
     user_email = request.json.get('email')
     wallet_id = request.json.get('wallet_id')  # Get the wallet ID from the request JSON
@@ -351,6 +355,7 @@ def add_user():
 
 # Delete user route
 @app.route('/delete_user', methods=['POST'])
+@login_required
 def delete_user():
     user_email = request.json.get('email')
     wallet_id = request.json.get('wallet_id')  # Get the wallet ID from the request JSON
@@ -396,6 +401,7 @@ def delete_user():
     return jsonify({'message': 'Invalid request'}), 400
 
 @app.route('/add_money', methods=['POST'])
+@login_required
 def add_money():
     user_id = get_logged_in_user_id()
 
@@ -424,7 +430,14 @@ def add_money():
     # User is not logged in
     return jsonify({'success': False, 'message': 'User not logged in.'}), 401
 
+@app.route('/add_expense', methods=['POST'])
+@login_required
+def add_expense():
+    print('Hola')
+
+
 @app.route('/get_balance', methods=['GET'])
+@login_required
 def get_balance():
     user_id = get_logged_in_user_id()
 
@@ -448,6 +461,7 @@ def get_balance():
 
 # Endpoint to retrieve types data from the "types" table
 @app.route('/get_expense_types', methods=['GET'])
+@login_required
 def get_names():
     try:
         # Fetch the names from the "types" table
@@ -461,6 +475,7 @@ def get_names():
 
 # Logout route
 @app.route('/logout')
+@login_required
 def logout():
     session.pop('token', None)
     return redirect(url_for('login'))  
