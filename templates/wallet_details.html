@@ -41,7 +41,7 @@
 
 <div class="container">
     <!-- Wallet Details -->
-    <h2 class="mt-5">{{ wallet.name }}</h2>
+    <h2 class="mt-5">{{ wallet.wallet_name }}</h2>
     {% if is_owner %}
     <button class="delete-wallet-btn btn-focus" onclick="showDeleteWalletConfirmation('{{ wallet.wallet_id }}')">Delete wallet</button>
     {% endif %}
@@ -155,7 +155,7 @@
 
     <script>
     
-    function showDeleteWalletConfirmation(walletId) {
+    function showDeleteWalletConfirmation(wallet_id) {
   Swal.fire({
     title: 'Delete Wallet',
     text: 'Are you sure you want to delete this wallet?',
@@ -165,12 +165,12 @@
     cancelButtonText: 'Cancel'
   }).then((result) => {
     if (result.isConfirmed) {
-      deleteWallet(walletId);
+      deleteWallet(wallet_id);
     }
   });
 }
 
-function deleteWallet(walletId) {
+function deleteWallet(wallet_id) {
   // Send the request to delete the wallet
   fetch('/delete_wallet', {
     method: 'POST',
@@ -178,7 +178,7 @@ function deleteWallet(walletId) {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      wallet_id: walletId
+      wallet_id: wallet_id
     })
   })
     .then(response => response.json())
@@ -224,7 +224,7 @@ function showDeleteUserConfirmation(userEmail) {
       },
       body: JSON.stringify({
         wallet_id: '{{ wallet.wallet_id }}',
-        email: userEmail
+        user_email: userEmail
       })
     })
       .then(response => response.json())
@@ -297,7 +297,7 @@ function showDeleteUserConfirmation(userEmail) {
         cancelButtonText: 'Cancel',
         preConfirm: function() {
           const userEmail = document.getElementById('swalUserEmail').value;
-          const walletId = '{{ wallet_id }}';
+          const wallet_id = '{{ wallet_id }}';
 
         // Check if the email field is empty
         if (userEmail.trim() === '') {
@@ -316,8 +316,8 @@ function showDeleteUserConfirmation(userEmail) {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            email: userEmail,
-            wallet_id: walletId
+            user_email: userEmail,
+            wallet_id: wallet_id
           })
         })
         .then(response => response.json())

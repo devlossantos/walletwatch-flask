@@ -89,7 +89,7 @@
 
         // Manually handle form submission
         var formData = new FormData();
-        formData.append('walletName', walletName);
+        formData.append('wallet_name', walletName);
         fetch("/wallets", {
           method: "POST",
           body: formData

@@ -246,17 +246,12 @@
     function handleAddMoneyButtonClick(amount) {
       const amountInput = amount;
 
-      if (!amountInput || amountInput <= 0) {
-        Swal.fire('Error', 'Please enter a valid amount.', 'error');
-        return;
-      }
-
       fetch('/add_money', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ amount: amountInput }),
+        body: JSON.stringify({ fund_amount: amountInput }),
       })
         .then((response) => response.json())
         .then((data) => {
@@ -307,7 +302,7 @@ function showAddExpenseDialog(expenseTypes) {
     title: 'Add Expense',
     html:
       '<input id="expense-amount-input" type="text" placeholder="Amount" required pattern="^\\d{1,3}(,\\d{3})*(\\.\\d{2})?$" class="swal2-input">' +
-      '<input id="name-input" type="text" placeholder="Name" required class="swal2-input">' +
+      '<input id="expense-name-input" type="text" placeholder="Name" required class="swal2-input">' +
       '<select id="expense-type-input" required class="swal2-select">' +
       '<option value="">Select type</option>' +
       expenseTypes.map((type) => `<option value="${type}">${type}</option>`).join('') +
@@ -317,51 +312,46 @@ function showAddExpenseDialog(expenseTypes) {
     cancelButtonText: 'Cancel',
     preConfirm: () => {
       const amountInput = document.getElementById('expense-amount-input').value;
-      const nameInput = document.getElementById('name-input').value;
+      const nameInput = document.getElementById('expense-name-input').value;
       const typeInput = document.getElementById('expense-type-input').value;
+
       return { amountInput, nameInput, typeInput };
     },
   }).then((result) => {
     if (!result.isDismissed) {
       const { amountInput, nameInput, typeInput } = result.value;
-      handleAddExpenseClick(amountInput, nameInput, typeInput);
+      handleAddExpenseButtonClick(amountInput, nameInput, typeInput);
     }
   });
 }
 
-    // Function to handle the "Add Expense" button click and save the expense to the server
-    function handleAddExpenseClick(amount, name, type) {
-
-      if (!amount || amount <= 0 || !name || !type) {
-        Swal.fire('Error', 'Please enter a valid amount, name, and type.', 'error');
-        return;
+function handleAddExpenseButtonClick(amount, name, type) {
+  fetch('/add_expense', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      amount: amount,
+      name: name,
+      type: type,
+    }),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.success) {
+        Swal.fire('Success', 'Expense added successfully.', 'success');
+        // Update balance
+        updateBalance()
+      } else {
+        Swal.fire('Error', data.message, 'error');
       }
-
-      fetch('/add_expense', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          amount: amount,
-          name: name,
-          type: type,
-        }),
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.success) {
-            Swal.fire('Success', 'Expense added successfully.', 'success');
-            // Perform any additional actions after adding the expense
-          } else {
-            Swal.fire('Error', data.message, 'error');
-          }
-        })
-        .catch((error) => {
-          Swal.fire('Error', 'An error occurred while adding the expense.', 'error');
-          console.error('Error:', error);
-        });
-    }
+    })
+    .catch((error) => {
+      Swal.fire('Error', 'An error occurred while adding the expense.', 'error');
+      console.error('Error:', error);
+    });
+}
 
   </script>
   
@@ -377,11 +367,11 @@ function showAddExpenseDialog(expenseTypes) {
 <!-- The Add Expense Dialog -->
 <div id="add-expense-dialog" class="dialog" role="dialog" aria-labelledby="dialogTitle-addExpense" aria-modal="true">
   <div class="dialog-content">
-    <input id="expense-amount-input" type="text" placeholder="Amount" required pattern="^\\d{1,3}(,\\d{3})*(\.\d{2})?$" aria-label="Enter the amount for the expense" class="swal2-input">
-    <input id="name-input" type="text" placeholder="Name" required aria-label="Enter the name for the expense" class="swal2-input">
-    <select id="expense-type-input" required class="swal2-select" aria-label="Select the type for the expense">
+    <input type="text" id="amount-input" required aria-label="Enter the amount for the expense">
+    <input type="text" id="name-input" required aria-label="Enter the name for the expense">
+    <select id="type-input" required aria-label="Select the type for the expense">
     </select>
-    <button onclick="handleAddExpenseClick()" aria-label="Confirm addition of entered expense">Add</button>
+    <button onclick="handleAddExpenseButtonClick()" aria-label="Confirm addition of entered expense">Add</button>
     <button onclick="closeAddExpenseDialog()" aria-label="Cancel addition of expense">Cancel</button>
   </div>
 </div>
