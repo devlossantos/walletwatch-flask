@@ -138,12 +138,7 @@ def login():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    user_id = get_logged_in_user_id()
-
-    if user_id is not None:
-        return render_template('dashboard.html')
-    else:
-        return render_template('login.html')
+    return render_template('dashboard.html')
 
 # Wallets route
 @app.route('/wallets', methods=['GET', 'POST'])
@@ -154,40 +149,29 @@ def wallets():
     if request.method == 'POST':
         wallet_name = request.form['wallet_name']
 
-        if user_id is not None:
-            # Check if the user_id exists in the users table
-            query = "SELECT * FROM users WHERE user_id = %s"
-            cursor.execute(query, (user_id,))
-            user = cursor.fetchone()
+        # Check if the wallet name already exists for the user
+        query = "SELECT * FROM wallets WHERE wallet_name = %s AND wallet_user_id = %s"
+        cursor.execute(query, (wallet_name, user_id))
+        existing_wallet = cursor.fetchone()
 
-            if user:
-                # Check if the wallet name already exists for the user
-                query = "SELECT * FROM wallets WHERE wallet_name = %s AND wallet_user_id = %s"
-                cursor.execute(query, (wallet_name, user_id))
-                existing_wallet = cursor.fetchone()
+        if existing_wallet:
+            return jsonify({'message': 'That wallet already exists, try a different name'}), 409
 
-                if existing_wallet:
-                    return jsonify({'message': 'That wallet already exists, try a different name'}), 409
+        # Insert the new wallet into the wallets table
+        query = "INSERT INTO wallets (wallet_name, wallet_status, wallet_user_id) VALUES (%s, 'Active', %s)"
+        cursor.execute(query, (wallet_name, user_id))
+        db.commit()
 
-                # Insert the new wallet into the wallets table
-                query = "INSERT INTO wallets (wallet_name, wallet_status, wallet_user_id) VALUES (%s, 'Active', %s)"
-                cursor.execute(query, (wallet_name, user_id))
-                db.commit()
+        # Get the wallet_id of the newly created wallet
+        wallet_id = cursor.lastrowid
 
-                # Get the wallet_id of the newly created wallet
-                wallet_id = cursor.lastrowid
+        # Insert the new wallet into the wallets_users table
+        query = "INSERT INTO wallets_users (wallet_id, user_id) VALUES (%s, %s)"
+        cursor.execute(query, (wallet_id, user_id))
+        db.commit()
 
-                # Insert the new wallet into the wallets_users table
-                query = "INSERT INTO wallets_users (wallet_id, user_id) VALUES (%s, %s)"
-                cursor.execute(query, (wallet_id, user_id))
-                db.commit()
-
-                return jsonify({'message': 'Wallet added successfully'})
-            else:
-                return jsonify({'message': 'User does not exist'}), 401
-        else:
-            return render_template('login.html')
-
+        return jsonify({'message': 'Wallet added successfully'})
+    
     else:  # Request method is GET
         wallets = get_wallets()  # Fetch and sort the wallets
 
@@ -236,18 +220,13 @@ def wallet_details(wallet_name):
     user_id = get_logged_in_user_id()
     wallet = get_wallet_by_name(wallet_name)
 
-    if user_id is not None:
+    if wallet:
+        is_owner = wallet['wallet_user_id'] == user_id if user_id is not None else False
+        shared_users = get_shared_users(cursor, wallet['wallet_id'])
 
-        if wallet:
-            is_owner = wallet['wallet_user_id'] == user_id if user_id is not None else False
-            shared_users = get_shared_users(cursor, wallet['wallet_id'])
-
-            return render_template('wallet_details.html', wallet=wallet, is_owner=is_owner, shared_users=shared_users, wallet_id=wallet['wallet_id'], users=shared_users)
-        else:
-            return render_template('login.html')
-
-    # Return a valid response in case user_id is None
-    return redirect(url_for('login'))
+        return render_template('wallet_details.html', wallet=wallet, is_owner=is_owner, shared_users=shared_users, wallet_id=wallet['wallet_id'], users=shared_users)
+    else:
+        return render_template('login.html')
 
 @app.route('/delete_wallet', methods=['POST'])
 @login_required
@@ -289,33 +268,28 @@ def get_shared_users(cursor, wallet_id):
 
 def get_wallet_by_name(wallet_name):
     user_id = get_logged_in_user_id()
-
-    if user_id is not None:
         
-        # Fetch the wallet details from the database based on the wallet name and user_id
-        query = """
-        SELECT w.*
-        FROM wallets AS w
-        LEFT JOIN wallets_users AS u ON w.wallet_id = u.wallet_id
-        WHERE w.wallet_name = %s AND (w.wallet_user_id = %s OR u.user_id = %s)
-        """
-        cursor.execute(query, (wallet_name, user_id, user_id))
-        wallet = cursor.fetchone()
+    # Fetch the wallet details from the database based on the wallet name and user_id
+    query = """
+    SELECT w.*
+    FROM wallets AS w
+    LEFT JOIN wallets_users AS u ON w.wallet_id = u.wallet_id
+    WHERE w.wallet_name = %s AND (w.wallet_user_id = %s OR u.user_id = %s)
+    """
+    cursor.execute(query, (wallet_name, user_id, user_id))
+    wallet = cursor.fetchone()
 
-        if wallet:
-            # If the wallet exists, return it as a dictionary
-            wallet_dict = {
-                'wallet_id': wallet[0],
-                'wallet_name': wallet[1],
-                'wallet_status': wallet[2],
-                'wallet_user_id': wallet[3],
-                'wallet_creation_date': wallet[4]
-            }
+    if wallet:
+        # If the wallet exists, return it as a dictionary
+        wallet_dict = {
+            'wallet_id': wallet[0],
+            'wallet_name': wallet[1],
+            'wallet_status': wallet[2],
+            'wallet_user_id': wallet[3],
+            'wallet_creation_date': wallet[4]
+        }
 
-            return wallet_dict
-        
-    # If the wallet doesn't exist or the user is not logged in, return None
-    return render_template('login.html')
+        return wallet_dict
 
 # Add User route
 @app.route('/add_user', methods=['POST'])
@@ -405,83 +379,75 @@ def delete_user():
 def add_money():
     user_id = get_logged_in_user_id()
 
-    if user_id is not None:
-        data = request.get_json()
-        fund_amount = data.get('fund_amount')
+    data = request.get_json()
+    fund_amount = data.get('fund_amount')
 
-        # Validate the entered amount
-        if not fund_amount or fund_amount == '0.00':
-            return jsonify({'success': False, 'message': 'Please enter a valid amount.'}), 400
+    # Validate the entered amount
+    if not fund_amount or fund_amount == '0.00':
+        return jsonify({'success': False, 'message': 'Please enter a valid amount.'}), 400
 
-        try:
-            # Convert the amount to a decimal value for storage in the funds table
-            decimal_amount = float(fund_amount.replace(',', '').replace('.', '')) / 100
+    try:
+        # Convert the amount to a decimal value for storage in the funds table
+        decimal_amount = float(fund_amount.replace(',', '').replace('.', '')) / 100
 
-            # Insert the amount into the funds table
-            query = "INSERT INTO funds (fund_user_id, fund_amount) VALUES (%s, %s)"
-            cursor.execute(query, (user_id, decimal_amount))
-            db.commit()
+        # Insert the amount into the funds table
+        query = "INSERT INTO funds (fund_user_id, fund_amount) VALUES (%s, %s)"
+        cursor.execute(query, (user_id, decimal_amount))
+        db.commit()
 
-            return jsonify({'success': True, 'message': 'Amount added successfully'})
-        except Exception as e:
-            print("Error adding amount to earnings:", e)
-            return jsonify({'success': False, 'message': 'An error occurred while adding the amount.'}), 500
-
-    # User is not logged in
-    return jsonify({'success': False, 'message': 'User not logged in.'}), 401
+        return jsonify({'success': True, 'message': 'Amount added successfully'})
+    except Exception as e:
+        print("Error adding amount to earnings:", e)
+        return jsonify({'success': False, 'message': 'An error occurred while adding the amount.'}), 500
 
 @app.route('/add_expense', methods=['POST'])
 @login_required
 def add_expense():
     user_id = get_logged_in_user_id()
 
-    if user_id is not None:
-        data = request.get_json()
-        amount = data.get('amount')
-        name = data.get('name')
-        type = data.get('type')
+    data = request.get_json()
+    amount = data.get('amount')
+    name = data.get('name')
+    type = data.get('type')
 
+    type_id = get_type_id_by_name(type)
+
+    balance = get_balance()
+
+    # Validate the entered amount
+    if not amount or amount == '0.00':
+        return jsonify({'success': False, 'message': 'Please enter a valid amount.'}), 400
+        
+    # Validate the name
+    if not name or name.strip() == '':
+        return jsonify({'success': False, 'message': 'Please enter a valid name.'}), 400
+        
+    # Validate the type
+    if not type_id:
+        return jsonify({'success': False, 'message': 'Please enter a valid type.'}), 400
+        
+    if balance < float(amount.replace(',', '')):
+        return jsonify({'success': False, 'message': 'Insufficient funds.'}), 400
+
+    try:
+        # Convert the amount to a decimal value for storage in the expenses table
+        decimal_amount = float(amount.replace(',', '').replace('.', '')) / 100
+
+        # Get the wallet_id for the wallet named "Main"
+        wallet_id = get_wallet_id_by_name("Main", user_id)
+
+        # Get the type_id for the selected expense type
         type_id = get_type_id_by_name(type)
 
-        balance = get_balance()
+        # Insert the expense into the expenses table
+        query = "INSERT INTO expenses (expense_user_id, expense_wallet_id, expense_type_id, expense_amount, expense_name) VALUES (%s, %s, %s, %s, %s)"
+        cursor.execute(query, (user_id, wallet_id, type_id, decimal_amount, name))
+        db.commit()
 
-        # Validate the entered amount
-        if not amount or amount == '0.00':
-            return jsonify({'success': False, 'message': 'Please enter a valid amount.'}), 400
-        
-        # Validate the name
-        if not name or name.strip() == '':
-            return jsonify({'success': False, 'message': 'Please enter a valid name.'}), 400
-        
-        # Validate the type
-        if not type_id:
-            return jsonify({'success': False, 'message': 'Please enter a valid type.'}), 400
-        
-        if balance < float(amount.replace(',', '')):
-            return jsonify({'success': False, 'message': 'Insufficient funds.'}), 400
-
-        try:
-            # Convert the amount to a decimal value for storage in the expenses table
-            decimal_amount = float(amount.replace(',', '').replace('.', '')) / 100
-
-            # Get the wallet_id for the wallet named "Main"
-            wallet_id = get_wallet_id_by_name("Main", user_id)
-
-            # Get the type_id for the selected expense type
-            type_id = get_type_id_by_name(type)
-
-            # Insert the expense into the expenses table
-            query = "INSERT INTO expenses (expense_user_id, expense_wallet_id, expense_type_id, expense_amount, expense_name) VALUES (%s, %s, %s, %s, %s)"
-            cursor.execute(query, (user_id, wallet_id, type_id, decimal_amount, name))
-            db.commit()
-
-            return jsonify({'success': True, 'message': 'Expense added successfully'})
-        except Exception as e:
+        return jsonify({'success': True, 'message': 'Expense added successfully'})
+    except Exception as e:
             print("Error adding expense:", e)
             return jsonify({'success': False, 'message': 'An error occurred while adding the expense.'}), 500
-
-    # User is not logged in
-    return jsonify({'success': False, 'message': 'User not logged in.'}), 401
 
 # Function to get the wallet ID based on the wallet name and user ID
 def get_wallet_id_by_name(wallet_name, user_id):
@@ -504,50 +470,74 @@ def get_type_id_by_name(expense_type):
 @app.route('/get_balance', methods=['GET'])
 @login_required
 def current_balance():
-    user_id = get_logged_in_user_id()
-
-    if user_id is not None:
-        try:
-
-            balance = get_balance()
-
-            return jsonify({'success': True, 'balance': balance})
+    try:
         
-        except Exception as e:
-            print("Error fetching balance:", e)
-            return jsonify({'success': False, 'message': 'An error occurred while fetching the balance.'}), 500
+        balance = get_balance()
 
-    # User is not logged in
-    return jsonify({'success': False, 'message': 'User not logged in.'}), 401
+        return jsonify({'success': True, 'balance': balance})
+        
+    except Exception as e:
+        print("Error fetching balance:", e)
+        return jsonify({'success': False, 'message': 'An error occurred while fetching the balance.'}), 500
 
 def get_balance():
     user_id = get_logged_in_user_id()
 
-    if user_id is not None:
+    try:
+        balance_query = """
+        SELECT IFNULL((SELECT SUM(fund_amount) 
+        FROM funds 
+        WHERE fund_user_id = %s), 0) - IFNULL((SELECT SUM(expense_amount) 
+        FROM expenses 
+        WHERE expense_user_id = %s 
+        AND MONTH(expense_date) = MONTH(CURDATE()) 
+        AND YEAR(expense_date) = YEAR(CURDATE())), 0) AS balance;
+        """
 
-        try:
-            # Fetch the sum of incomes (funds added) for the logged-in user from the funds table
-            funds_query = "SELECT IFNULL(SUM(fund_amount), 0) AS available_funds FROM funds WHERE fund_user_id = %s"
-            cursor.execute(funds_query, (user_id,))
-            funds_query_result = cursor.fetchone()
-            funds = float(funds_query_result[0])
+        cursor.execute(balance_query, (user_id,user_id))
+        balance_query_result = cursor.fetchone()
+        balance = float(balance_query_result[0])
 
-            # Fetch the sum of expenses for the logged-in user from the expenses table
-            expenses_query = "SELECT IFNULL(SUM(expense_amount), 0) AS expenses FROM expenses WHERE expense_user_id = %s"
-            cursor.execute(expenses_query, (user_id,))
-            expenses_query_result = cursor.fetchone()
-            expenses = float(expenses_query_result[0])
 
-            # Calculate the balance by subtracting expenses from funds
-            balance = funds - expenses
+        return balance
+    except Exception as e:
+        print("Error fetching balance:", e)
+        return None
 
-            return balance
-        except Exception as e:
-            print("Error fetching balance:", e)
-            return None
+@app.route('/get_expenses', methods=['GET'])
+@login_required
+def current_expenses():
+    try:
+
+        expenses = get_expenses()
+
+        return jsonify({'success': True, 'expenses': expenses})
         
-    # User is not logged in
-    return jsonify({'success': False, 'message': 'User not logged in.'}), 401
+    except Exception as e:
+        print("Error fetching expenses:", e)
+        return jsonify({'success': False, 'message': 'An error occurred while fetching expenses.'}), 500
+
+def get_expenses():
+    user_id = get_logged_in_user_id()
+
+    try:
+        expenses_query = """
+        SELECT IFNULL(SUM(expense_amount), 0) AS expenses 
+        FROM expenses 
+        WHERE expense_user_id = %s 
+        AND MONTH(expense_date) = MONTH(CURDATE()) 
+        AND YEAR(expense_date) = YEAR(CURDATE())
+        """
+
+        cursor.execute(expenses_query, (user_id,))
+        expenses_query_result = cursor.fetchone()
+        expenses = float(expenses_query_result[0])
+
+
+        return expenses
+    except Exception as e:
+        print("Error fetching expenses:", e)
+        return None
 
 # Endpoint to retrieve types data from the "types" table
 @app.route('/get_expense_types', methods=['GET'])

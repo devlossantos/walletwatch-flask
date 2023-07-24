@@ -54,14 +54,13 @@
     text-align: center;
   }
 
-  /* Additional custom styles for the "Add Expense" dialog */
-  .swal2-add-expense [placeholder="Amount"] {
+  .swal2-add-expense .swal2-add-expense-amount {
     font-size: 48px;
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 4px;
     outline: none;
-    /* Add any other styles you want to customize the amount input field */
+    text-align: center;
   }
 
   .swal2-select {
@@ -98,7 +97,8 @@
     <div class="col-md-6 col-lg-6 mb-3">
       <div class="card border-0 wallet-card" style="background-color: #eeeeee; height: 150px;">
         <div class="card-body">
-          <!-- Square 2 content -->
+          <h4 class="card-title" id="expensesLabel">Expenses this month</h4>
+          <h2 id="expenses" style="font-size: 36px; font-weight: bold; text-align: center;" aria-labelledby="balanceLabel">Loading...</h2>
         </div>
       </div>
     </div>
@@ -106,7 +106,7 @@
   
   <div class="row bottom-squares">
     <div class="col-12">
-      <h2 class="section-title">Your performance</h2>
+      <h2 class="section-title">Your performance this month</h2>
     </div>
     <!-- Square 3 -->
     <div class="col-md-6 col-lg-4 mb-4">
@@ -140,8 +140,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.20/dist/sweetalert2.all.min.js"></script>  
   <script>
-    // Function to fetch the current balance for the logged-in user from the server
-    function updateBalance() {
+// Function to fetch the current balance for the logged-in user from the server
+function updateBalance() {
       fetch('/get_balance', {
         method: 'GET',
         headers: {
@@ -160,10 +160,36 @@
         .catch((error) => {
           console.error('Error:', error);
         });
-    }
+}
 
-    // Call the updateBalance function to initially fetch and display the balance
-    updateBalance();
+// Call the updateBalance function to initially fetch and display the balance
+updateBalance();
+
+// Function to fetch and display the sum of expenses for the current month
+function updateExpenses() {
+  fetch('/get_expenses', {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.success) {
+        const formattedTotalExpenses = formatAmountWithCommas(data.expenses.toFixed(2));
+        document.getElementById('expenses').innerText = '$' + formattedTotalExpenses;
+        
+      } else {
+        console.error('Error fetching expenses:', data.message);
+      }
+    })
+    .catch((error) => {
+      console.error('Error:', error);
+    });
+}
+
+// Call the updateExpenses function to initially fetch and display the expenses
+updateExpenses();
 
     // Function to display the pop-up dialog using SweetAlert
 function showAddMoneyDialog() {
@@ -247,7 +273,7 @@ function handleAddMoneyButtonClick(amount) {
         .then((data) => {
           if (data.success) {
             Swal.fire('Success', 'Amount added successfully.', 'success');
-            updateBalance(); // Update the displayed balance after adding the amount
+            updateBalance();
           } else {
             Swal.fire('Error', data.message, 'error');
           }
@@ -325,7 +351,8 @@ function showAddExpenseDialog(expenseTypes) {
       amountInput.removeEventListener('keydown', restrictAmountLength);
     },
     customClass: {
-      container: 'swal2-add-expense', // Use the custom class for the "Add Expense" dialog
+      container: 'swal2-add-expense',
+      input: 'swal2-add-expense-amount'
     },
   }).then((result) => {
     if (!result.isDismissed) {
@@ -352,7 +379,7 @@ function handleAddExpenseButtonClick(amount, name, type) {
     .then((data) => {
       if (data.success) {
         Swal.fire('Success', 'Expense added successfully.', 'success');
-        // Update balance
+        updateExpenses()
         updateBalance()
       } else {
         Swal.fire('Error', data.message, 'error');
