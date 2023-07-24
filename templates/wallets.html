@@ -127,57 +127,6 @@
       var addWalletPopup = document.getElementById("addWalletPopup");
       addWalletPopup.style.display = "none";
     }
-
-    document.getElementById("addWalletForm").addEventListener("submit", function(event) {
-      event.preventDefault(); // Prevent form submission
-
-      // Close the "Add Wallet" dialog
-      cancelAddWallet();
-
-      // Get the form data
-      var formData = new FormData(this);
-
-      // Send a POST request to add the wallet
-      fetch("/wallets", {
-        method: "POST",
-        body: formData
-      })
-        .then(function(response) {
-          if (response.ok) {
-            // Wallet added successfully
-            // Refresh the page to see the updated list
-            window.location.reload();
-          } else {
-            // Handle the error response
-            response.json().then(function(data) {
-              // Display the error message using SweetAlert
-              Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: data.message
-              });
-            });
-          }
-        })
-        .then(function() {
-          // Show success message after the page has been refreshed
-          Swal.fire({
-            icon: 'success',
-            title: 'Success',
-            text: 'Wallet added successfully.'
-          });
-        })
-        .catch(function(error) {
-          // Handle any network or other errors
-          console.error("Error adding wallet:", error);
-          // Display a generic error message using SweetAlert
-          Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'An error occurred while adding the wallet. Please try again.'
-          });
-        });
-    });
   </script>
 </div>
 {% endblock %}

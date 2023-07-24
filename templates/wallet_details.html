@@ -156,21 +156,22 @@
     <script>
     
     function showDeleteWalletConfirmation(wallet_id) {
-  Swal.fire({
-    title: 'Delete Wallet',
-    text: 'Are you sure you want to delete this wallet?',
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Continue',
-    cancelButtonText: 'Cancel'
-  }).then((result) => {
-    if (result.isConfirmed) {
-      deleteWallet(wallet_id);
+      
+      Swal.fire({
+        title: 'Delete Wallet',
+        text: 'Are you sure you want to delete this wallet?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Continue',
+        cancelButtonText: 'Cancel'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          deleteWallet(wallet_id);
+        }
+      });
     }
-  });
-}
 
-function deleteWallet(wallet_id) {
+    function deleteWallet(wallet_id) {
   // Send the request to delete the wallet
   fetch('/delete_wallet', {
     method: 'POST',
@@ -184,10 +185,19 @@ function deleteWallet(wallet_id) {
     .then(response => response.json())
     .then(data => {
       if (data.message === 'Wallet deleted successfully') {
-
-        window.location.href = '/wallets';
+        // Show the SweetAlert success message
+        Swal.fire({
+          icon: 'success',
+          title: 'Success',
+          text: data.message
+        }).then(() => {
+          // Redirect to /wallets after a slight delay (e.g., 1 second)
+          setTimeout(() => {
+            window.location.href = '/wallets';
+          }, 10);
+        });
       } else {
-
+        // Display an error message using SweetAlert
         Swal.fire({
           icon: 'error',
           title: 'Error',

@@ -157,20 +157,25 @@ def wallets():
         if existing_wallet:
             return jsonify({'message': 'That wallet already exists, try a different name'}), 409
 
-        # Insert the new wallet into the wallets table
-        query = "INSERT INTO wallets (wallet_name, wallet_status, wallet_user_id) VALUES (%s, 'Active', %s)"
-        cursor.execute(query, (wallet_name, user_id))
-        db.commit()
+        try:
 
-        # Get the wallet_id of the newly created wallet
-        wallet_id = cursor.lastrowid
+            # Insert the new wallet into the wallets table
+            query = "INSERT INTO wallets (wallet_name, wallet_status, wallet_user_id) VALUES (%s, 'Active', %s)"
+            cursor.execute(query, (wallet_name, user_id))
+            db.commit()
 
-        # Insert the new wallet into the wallets_users table
-        query = "INSERT INTO wallets_users (wallet_id, user_id) VALUES (%s, %s)"
-        cursor.execute(query, (wallet_id, user_id))
-        db.commit()
+            # Get the wallet_id of the newly created wallet
+            wallet_id = cursor.lastrowid
 
-        return jsonify({'message': 'Wallet added successfully'})
+            # Insert the new wallet into the wallets_users table
+            query = "INSERT INTO wallets_users (wallet_id, user_id) VALUES (%s, %s)"
+            cursor.execute(query, (wallet_id, user_id))
+            db.commit()
+
+            return jsonify({'message': 'Wallet added successfully'})
+        except Exception as e:
+            return jsonify({'message': 'An error occurred while adding the wallet.'}), 500
+
     
     else:  # Request method is GET
         wallets = get_wallets()  # Fetch and sort the wallets
@@ -228,6 +233,7 @@ def wallet_details(wallet_name):
     else:
         return render_template('login.html')
 
+# Delete wallet route
 @app.route('/delete_wallet', methods=['POST'])
 @login_required
 def delete_wallet():
@@ -235,17 +241,38 @@ def delete_wallet():
 
     if wallet_id:
 
-        # Delete the wallet from the wallets_users table
-        query = "DELETE FROM wallets_users WHERE wallet_id = %s"
+        # Get the wallet name for the provided wallet_id
+        query = "SELECT wallet_name FROM wallets WHERE wallet_id = %s"
         cursor.execute(query, (wallet_id,))
-        db.commit()
+        wallet_data = cursor.fetchone()
 
-        # Delete the wallet from the wallets table
-        query = "DELETE FROM wallets WHERE wallet_id = %s"
-        cursor.execute(query, (wallet_id,))
-        db.commit()
+        wallet_name = wallet_data[0]
 
-        return jsonify({'message': 'Wallet deleted successfully'})
+        # Check if the wallet is the main wallet
+        if wallet_name == "Main":
+            return jsonify({'message': 'Your main wallet cannot be deleted.'}), 403
+        
+        try:
+            
+            # Delete the wallet from the wallets_users table
+            query = "DELETE FROM wallets_users WHERE wallet_id = %s"
+            cursor.execute(query, (wallet_id,))
+            db.commit()
+
+            # Delete the expenses associated with this wallet
+            query = "DELETE FROM expenses WHERE expense_wallet_id = %s"
+            cursor.execute(query, (wallet_id,))
+            db.commit()
+
+            # Delete the wallet from the wallets table
+            query = "DELETE FROM wallets WHERE wallet_id = %s"
+            cursor.execute(query, (wallet_id,))
+            db.commit()
+
+            return jsonify({'message': 'Wallet deleted successfully'})
+
+        except Exception as e:
+            return jsonify({'message': 'An error occurred while deleting the wallet.'}), 500
 
     # Wallet ID not provided
     return jsonify({'message': 'Wallet not found'}), 404
