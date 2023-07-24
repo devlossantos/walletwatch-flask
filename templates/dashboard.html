@@ -23,10 +23,6 @@
     color: #808080;
   }
   
-  .custom-card {
-    margin-bottom: 10px;
-  }
-  
   .add-money-btn {
     background-color: #28a745;
     color: #fff;
@@ -49,16 +45,6 @@
     margin-top: 100px;
   }
 
-  .dialog {
-    display: none;
-    position: fixed;
-    z-index: 1;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-  }
-
   .swal2-add-money .swal2-input {
     font-size: 48px;
     padding: 10px;
@@ -66,6 +52,16 @@
     border-radius: 4px;
     outline: none;
     text-align: center;
+  }
+
+  /* Additional custom styles for the "Add Expense" dialog */
+  .swal2-add-expense [placeholder="Amount"] {
+    font-size: 48px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    outline: none;
+    /* Add any other styles you want to customize the amount input field */
   }
 
   .swal2-select {
@@ -78,11 +74,6 @@
     background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 0 0" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>');
     background-position: right 10px center;
     background-size: 10px;
-  }
-
-  .swal2-popup .swal2-title {
-    font-size: 20px;
-    font-weight: bold;
   }
 
   .btn-focus:focus {
@@ -175,14 +166,13 @@
     updateBalance();
 
     // Function to display the pop-up dialog using SweetAlert
-    function showAddMoneyDialog() {
-      Swal.fire({
+function showAddMoneyDialog() {
+  Swal.fire({
         title: 'Add money',
         input: 'text',
         inputAttributes: {
           required: true,
           type: 'text',
-          pattern: '^\\d{1,3}(,\\d{3})*(\\.\\d{2})?$',
           ariaLabelledBy: 'Add money',
         },
         showCancelButton: true,
@@ -209,42 +199,42 @@
           handleAddMoneyButtonClick(formattedAmount);
         }
       });
+}
+  
+// Function to format the amount as the user types
+function formatAmountInput() {
+  const amountInput = Swal.getInput();
+  const enteredAmount = amountInput.value;
+  
+    if (enteredAmount.trim() === '') {
+      return;
     }
   
-    // Function to format the amount as the user types
-    function formatAmountInput() {
-      const amountInput = Swal.getInput();
-      const enteredAmount = amountInput.value;
-  
-      if (enteredAmount.trim() === '') {
-        return;
-      }
-  
-      const numericValue = enteredAmount.replace(/[^\d]/g, '');
-      const formattedAmount = (numericValue / 100).toFixed(2);
-      amountInput.value = formatAmountWithCommas(formattedAmount);
-    }
+    const numericValue = enteredAmount.replace(/[^\d]/g, '');
+    const formattedAmount = (numericValue / 100).toFixed(2);
+    amountInput.value = formatAmountWithCommas(formattedAmount);
+}
     
-    // Function to add commas for thousands separator
-    function formatAmountWithCommas(amount) {
-      const parts = amount.split('.');
-      const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-      return parts.length === 1 ? integerPart : integerPart + '.' + parts[1];
-    }
-
-    // Function to restrict the amount input length to 9 characters
-    function restrictAmountLength(event) {
-      const amountInput = event.target;
+// Function to add commas for thousands separator
+function formatAmountWithCommas(amount) {
+  const parts = amount.split('.');
+  const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return parts.length === 1 ? integerPart : integerPart + '.' + parts[1];
+}
+      
+// Function to restrict the amount input length to 9 characters
+function restrictAmountLength(event) {
+  const amountInput = event.target;
       const numericValue = amountInput.value.replace(/[^\d]/g, '');
 
       if (numericValue.length >= 9 && event.keyCode !== 8 /* Backspace key */) {
         event.preventDefault();
-    }
-    }
+      }
+}
 
-    // Function to handle the "Add" button click and save the amount to the server
-    function handleAddMoneyButtonClick(amount) {
-      const amountInput = amount;
+// Function to handle the "Add" button click and save the amount to the server
+function handleAddMoneyButtonClick(amount) {
+  const amountInput = amount;
 
       fetch('/add_money', {
         method: 'POST',
@@ -266,7 +256,8 @@
           Swal.fire('Error', 'An error occurred while adding the amount.', 'error');
           console.error('Error:', error);
         });
-    }
+      
+}
 
 // Function to fetch the expense types from the server and show the "Add Expense" dialog   
 function fetchAndShowAddExpenseDialog() {
@@ -300,27 +291,47 @@ function fetchAndShowAddExpenseDialog() {
 function showAddExpenseDialog(expenseTypes) {
   Swal.fire({
     title: 'Add Expense',
-    html:
-      '<input id="expense-amount-input" type="text" placeholder="Amount" required pattern="^\\d{1,3}(,\\d{3})*(\\.\\d{2})?$" class="swal2-input">' +
-      '<input id="expense-name-input" type="text" placeholder="Name" required class="swal2-input">' +
-      '<select id="expense-type-input" required class="swal2-select">' +
-      '<option value="">Select type</option>' +
-      expenseTypes.map((type) => `<option value="${type}">${type}</option>`).join('') +
-      '</select>',
+    input: 'text',
+    inputAttributes: {
+      required: true,
+      type: 'text',
+      ariaLabelledBy: 'Add expense',
+    },
     showCancelButton: true,
     confirmButtonText: 'Add',
     cancelButtonText: 'Cancel',
+    inputValue: '0.00', // Initial value
+    html:
+    '<input id="expense-name-input" type="text" placeholder="Name" required class="swal2-input" maxlength="30">' +
+    '<select id="expense-type-input" required class="swal2-select">' +
+      '<option value="">Select type</option>' +
+      expenseTypes.map((type) => `<option value="${type}">${type}</option>`).join('') +
+      '</select>' ,
     preConfirm: () => {
-      const amountInput = document.getElementById('expense-amount-input').value;
+      const amountInput = Swal.getInput().value;
       const nameInput = document.getElementById('expense-name-input').value;
       const typeInput = document.getElementById('expense-type-input').value;
 
       return { amountInput, nameInput, typeInput };
     },
+    didOpen: () => {
+      const amountInput = Swal.getInput();
+      amountInput.addEventListener('input', formatAmountInput);
+      amountInput.addEventListener('keydown', restrictAmountLength);
+    },
+    willClose: () => {
+      const amountInput = Swal.getInput();
+      amountInput.removeEventListener('input', formatAmountInput);
+      amountInput.removeEventListener('keydown', restrictAmountLength);
+    },
+    customClass: {
+      container: 'swal2-add-expense', // Use the custom class for the "Add Expense" dialog
+    },
   }).then((result) => {
     if (!result.isDismissed) {
       const { amountInput, nameInput, typeInput } = result.value;
-      handleAddExpenseButtonClick(amountInput, nameInput, typeInput);
+      const formattedAmount = formatAmountWithCommas(amountInput);
+      handleAddExpenseButtonClick(formattedAmount, nameInput, typeInput);
     }
   });
 }
@@ -353,27 +364,6 @@ function handleAddExpenseButtonClick(amount, name, type) {
     });
 }
 
-  </script>
+</script>
   
-  <!-- The Add Money Dialog -->
-  <div id="add-money-dialog" class="dialog" role="dialog" aria-labelledby="dialogTitle-addMoney" aria-modal="true">
-    <div class="dialog-content">
-      <input type="text" id="amount-input" required aria-label="Enter the amount to add" />
-      <button onclick="handleAddMoneyButtonClick()" aria-label="Confirm addition of entered amount">Add</button>
-      <button onclick="closeAddMoneyDialog()" aria-label="Cancel addition of money">Cancel</button>
-    </div>
-  </div>
-
-<!-- The Add Expense Dialog -->
-<div id="add-expense-dialog" class="dialog" role="dialog" aria-labelledby="dialogTitle-addExpense" aria-modal="true">
-  <div class="dialog-content">
-    <input type="text" id="amount-input" required aria-label="Enter the amount for the expense">
-    <input type="text" id="name-input" required aria-label="Enter the name for the expense">
-    <select id="type-input" required aria-label="Select the type for the expense">
-    </select>
-    <button onclick="handleAddExpenseButtonClick()" aria-label="Confirm addition of entered expense">Add</button>
-    <button onclick="closeAddExpenseDialog()" aria-label="Cancel addition of expense">Cancel</button>
-  </div>
-</div>
-
 {% endblock %}

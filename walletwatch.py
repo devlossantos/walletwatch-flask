@@ -457,7 +457,7 @@ def add_expense():
         if not type_id:
             return jsonify({'success': False, 'message': 'Please enter a valid type.'}), 400
         
-        if balance < float(amount):
+        if balance < float(amount.replace(',', '')):
             return jsonify({'success': False, 'message': 'Insufficient funds.'}), 400
 
         try:

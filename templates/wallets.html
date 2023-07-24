@@ -73,7 +73,7 @@
     // Use SweetAlert to show the "Add Wallet" popup
     Swal.fire({
       title: 'New wallet',
-      html: '<input type="text" id="swalWalletName" class="swal2-input" placeholder="Enter wallet name" maxlength="37">',
+      html: '<input type="text" id="swalWalletName" class="swal2-input" placeholder="Enter wallet name" maxlength="30">',
       showCancelButton: true,
       confirmButtonText: 'Add',
       preConfirm: function() {
@@ -87,7 +87,6 @@
           return false;
         }
 
-        // Manually handle form submission
         var formData = new FormData();
         formData.append('wallet_name', walletName);
         fetch("/wallets", {
