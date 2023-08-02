@@ -79,6 +79,39 @@
     outline: none;
   }
 
+  .wallet-card {
+    position: relative;
+  }
+
+  .type-card-title {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-size: 24px;
+    color: #d4d4d4;
+  }
+
+  .percentage {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 72px;
+    color: #fff;
+  }
+
+  .type-goal-legend {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    font-size: 14px;
+    color: #d4d4d4;
+  }
+
+  .card-title {
+    text-align: left;
+  }
+
 </style>
 
 <div class="container custom-margin">
@@ -98,7 +131,7 @@
       <div class="card border-0 wallet-card" style="background-color: #eeeeee; height: 150px;">
         <div class="card-body">
           <h4 class="card-title" id="expensesLabel">Expenses this month</h4>
-          <h2 id="expenses" style="font-size: 36px; font-weight: bold; text-align: center;" aria-labelledby="balanceLabel">Loading...</h2>
+          <h2 id="expenses" style="font-size: 36px; font-weight: bold; text-align: center;" aria-labelledby="expensesLabel">Loading...</h2>
         </div>
       </div>
     </div>
@@ -111,27 +144,35 @@
     <!-- Square 3 -->
     <div class="col-md-6 col-lg-4 mb-4">
       <div class="card border-0 wallet-card" style="background-color: #6610F2; height: 200px;">
+        <div class="percentage">75%</div> <!-- Add a percentage div for displaying the percentage -->
         <div class="card-body">
-          <!-- Square 3 content -->
+          <h4 class="type-card-title">Needs</h4>
         </div>
+        <h4 class="type-goal-legend">Goal: Less or equal to 50%</h4>
       </div>
     </div>
     <!-- Square 4 -->
     <div class="col-md-6 col-lg-4 mb-4">
       <div class="card border-0 wallet-card" style="background-color: #6C757D; height: 200px;">
+        <div class="percentage">60%</div>
         <div class="card-body">
-          <!-- Square 4 content -->
+          <h4 class="type-card-title">Wants</h4>
         </div>
+        <h4 class="type-goal-legend">Goal: Less or equal to 30%</h4>
       </div>
     </div>
     <!-- Square 5 -->
     <div class="col-md-6 col-lg-4 mb-4">
       <div class="card border-0 wallet-card" style="background-color: #FD7E14; height: 200px;">
+        <div class="percentage">90%</div>
         <div class="card-body">
-          <!-- Square 5 content -->
+          <h4 class="type-card-title">Savings and Debt Repayment</h4>
         </div>
+        <h4 class="type-goal-legend">Goal: Greater or equal to 20%</h4>
       </div>
     </div>
+  </div>
+  
     <div class="col-12 text-center">
       <button class="add-money-btn btn-focus" onclick="showAddMoneyDialog()" aria-label="Add money">Add money</button>
       <button class="add-expense-btn btn-focus" onclick="fetchAndShowAddExpenseDialog()" aria-label="Add expense">Add expense</button>
@@ -379,8 +420,7 @@ function handleAddExpenseButtonClick(amount, name, type) {
     .then((data) => {
       if (data.success) {
         Swal.fire('Success', 'Expense added successfully.', 'success');
-        updateExpenses()
-        updateBalance()
+        updateExpenses(); // Balance should also update
       } else {
         Swal.fire('Error', data.message, 'error');
       }
