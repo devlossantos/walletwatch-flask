@@ -45,24 +45,6 @@
     margin-top: 100px;
   }
 
-  .swal2-add-money .swal2-input {
-    font-size: 48px;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    outline: none;
-    text-align: center;
-  }
-
-  .swal2-add-expense .swal2-add-expense-amount {
-    font-size: 48px;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    outline: none;
-    text-align: center;
-  }
-
   .swal2-select {
     font-size: 18px;
     padding: 10px;
@@ -112,6 +94,10 @@
     text-align: left;
   }
 
+  .card-title-top_amounts {
+    text-align: center;
+  }
+
 </style>
 
 <div class="container custom-margin">
@@ -121,8 +107,8 @@
     <div class="col-md-6 col-lg-6 mb-3">
       <div class="card border-0 wallet-card" style="background-color: #eeeeee; height: 150px;">
         <div class="card-body">
-          <h4 class="card-title" id="balanceLabel">Current Balance</h4>
-          <h2 id="balance" style="font-size: 36px; font-weight: bold; text-align: center;" aria-labelledby="balanceLabel">Loading...</h2>
+          <h4 class="card-title-top_amounts" id="balanceLabel">Current Balance</h4>
+          <h2 id="balance" style="font-size: 36px; font-weight: bold; text-align: center;" aria-labelledby="balanceLabel">$0.00</h2>
         </div>
       </div>
     </div>
@@ -130,8 +116,8 @@
     <div class="col-md-6 col-lg-6 mb-3">
       <div class="card border-0 wallet-card" style="background-color: #eeeeee; height: 150px;">
         <div class="card-body">
-          <h4 class="card-title" id="expensesLabel">Expenses this month</h4>
-          <h2 id="expenses" style="font-size: 36px; font-weight: bold; text-align: center;" aria-labelledby="expensesLabel">Loading...</h2>
+          <h4 class="card-title-top_amounts" id="expensesLabel">Expenses this month</h4>
+          <h2 id="expenses" style="font-size: 36px; font-weight: bold; text-align: center;" aria-labelledby="expensesLabel">$0.00</h2>
         </div>
       </div>
     </div>
@@ -143,8 +129,8 @@
     </div>
     <!-- Square 3 -->
     <div class="col-md-6 col-lg-4 mb-4">
-      <div class="card border-0 wallet-card" style="background-color: #6610F2; height: 200px;">
-        <div class="percentage">75%</div> <!-- Add a percentage div for displaying the percentage -->
+      <div class="card border-0 wallet-card" style="background-color: #646464; height: 200px;">
+        <div class="percentage" id="needsPercentage">0.00%</div>
         <div class="card-body">
           <h4 class="type-card-title">Needs</h4>
         </div>
@@ -153,8 +139,8 @@
     </div>
     <!-- Square 4 -->
     <div class="col-md-6 col-lg-4 mb-4">
-      <div class="card border-0 wallet-card" style="background-color: #6C757D; height: 200px;">
-        <div class="percentage">60%</div>
+      <div class="card border-0 wallet-card" style="background-color: #646464; height: 200px;">
+        <div class="percentage" id="wantsPercentage">0.00%</div>
         <div class="card-body">
           <h4 class="type-card-title">Wants</h4>
         </div>
@@ -163,8 +149,8 @@
     </div>
     <!-- Square 5 -->
     <div class="col-md-6 col-lg-4 mb-4">
-      <div class="card border-0 wallet-card" style="background-color: #FD7E14; height: 200px;">
-        <div class="percentage">90%</div>
+      <div class="card border-0 wallet-card" style="background-color: #646464; height: 200px;">
+        <div class="percentage" id="savingsDebtPercentage">0.00%</div>
         <div class="card-body">
           <h4 class="type-card-title">Savings and Debt Repayment</h4>
         </div>
@@ -181,26 +167,28 @@
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.20/dist/sweetalert2.all.min.js"></script>  
   <script>
+
 // Function to fetch the current balance for the logged-in user from the server
 function updateBalance() {
-      fetch('/get_balance', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.success) {
-            const formattedBalance = formatAmountWithCommas(data.balance.toFixed(2));
-            document.getElementById('balance').innerText = '$' + formattedBalance;
-          } else {
-            console.error('Error fetching balance:', data.message);
-          }
-        })
-        .catch((error) => {
-          console.error('Error:', error);
-        });
+  fetch('/get_balance', {
+    method: 'GET',
+    headers: {
+        'Content-Type': 'application/json',
+    },
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.success) {
+        const formattedBalance = formatAmountWithCommas(data.balance.toFixed(2));
+        document.getElementById('balance').innerText = '$' + formattedBalance;
+      
+      } else {
+        console.error('Error fetching balance:', data.message);
+      }
+    })
+    .catch((error) => {
+      console.error('Error:', error);
+    });
 }
 
 // Call the updateBalance function to initially fetch and display the balance
@@ -232,45 +220,64 @@ function updateExpenses() {
 // Call the updateExpenses function to initially fetch and display the expenses
 updateExpenses();
 
-    // Function to display the pop-up dialog using SweetAlert
+// Function to fetch the expense types from the server and show the "Add Expense" dialog   
+function fetchAndShowAddExpenseDialog() {
+  fetch('/get_expense_types', {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.success) {
+         // Check if the 'names' property exists and is an array
+         const expenseTypes = data.names;
+        if (expenseTypes && Array.isArray(expenseTypes)) {
+          // Fetch the expense types data and call the 'showAddExpenseDialog' function with this data
+          showAddExpenseDialog(expenseTypes);
+        } else {
+          console.error('Error fetching expense types: Invalid data format.');
+        }
+      } else {
+        console.error('Error fetching expense types:', data.message);
+      }
+    })
+    .catch((error) => {
+      console.error('Error:', error);
+    });
+}
+
+// Function to display the pop-up dialog using SweetAlert
 function showAddMoneyDialog() {
   Swal.fire({
-        title: 'Add money',
-        input: 'text',
-        inputAttributes: {
-          required: true,
-          type: 'text',
-          ariaLabelledBy: 'Add money',
-        },
-        showCancelButton: true,
-        confirmButtonText: 'Add',
-        cancelButtonText: 'Cancel',
-        inputValue: '0.00', // Initial value
-        customClass: {
-          container: 'swal2-add-money',
-        },
-        didOpen: () => {
-          const amountInput = Swal.getInput();
-          amountInput.addEventListener('input', formatAmountInput);
-          amountInput.addEventListener('keydown', restrictAmountLength);
-        },
-        willClose: () => {
-          const amountInput = Swal.getInput();
-          amountInput.removeEventListener('input', formatAmountInput);
-          amountInput.removeEventListener('keydown', restrictAmountLength);
-        },
-      }).then((result) => {
-        if (result.isConfirmed) {
-          const enteredAmount = result.value;
-          const formattedAmount = formatAmountWithCommas(enteredAmount);
-          handleAddMoneyButtonClick(formattedAmount);
-        }
-      });
+    title: 'Add money',
+    showCancelButton: true,
+    confirmButtonText: 'Add',
+    cancelButtonText: 'Cancel',
+    html:
+      '<input id="add-money-amount-input" type="text" placeholder="Amount" required class="swal2-input" maxlength="15" style="margin-bottom:5px;">',
+    didOpen: () => {
+      const amountInput = document.getElementById('add-money-amount-input');
+      amountInput.addEventListener('input', formatAddMoneyAmountInput);
+      amountInput.addEventListener('keydown', restrictAmountLength);
+    },
+    willClose: () => {
+      const amountInput = document.getElementById('add-money-amount-input');
+      amountInput.removeEventListener('input', formatAddMoneyAmountInput);
+      amountInput.removeEventListener('keydown', restrictAmountLength);
+    },
+  }).then((result) => {
+    if (result.isConfirmed) {
+      const enteredAmount = document.getElementById('add-money-amount-input').value;
+      const formattedAmount = formatAmountWithCommas(enteredAmount);
+      handleAddMoneyButtonClick(formattedAmount);
+    }
+  });
 }
-  
-// Function to format the amount as the user types
-function formatAmountInput() {
-  const amountInput = Swal.getInput();
+
+function formatAddMoneyAmountInput() {
+  const amountInput = document.getElementById('add-money-amount-input');
   const enteredAmount = amountInput.value;
   
     if (enteredAmount.trim() === '') {
@@ -281,14 +288,67 @@ function formatAmountInput() {
     const formattedAmount = (numericValue / 100).toFixed(2);
     amountInput.value = formatAmountWithCommas(formattedAmount);
 }
-    
+
+// Function to show the "Add Expense" dialog with the fetched expense types
+function showAddExpenseDialog(expenseTypes) {
+  Swal.fire({
+    title: 'Add Expense',
+    showCancelButton: true,
+    confirmButtonText: 'Add',
+    cancelButtonText: 'Cancel',
+    html:
+        '<input id="expense-amount-input" type="text" placeholder="Amount" required class="swal2-input" maxlength="15">'+
+        '<input id="expense-name-input" type="text" placeholder="Name" required class="swal2-input" maxlength="30">'+
+        '<select id="expense-type-input" required class="swal2-select">'+
+          '<option value="">Select type</option>'+
+          expenseTypes.map((type) => `<option value="${type}">${type}</option>`).join('') + 
+        '</select>',
+    preConfirm: () => {
+      const amountInput = document.getElementById('expense-amount-input').value;
+      const nameInput = document.getElementById('expense-name-input').value;
+      const typeInput = document.getElementById('expense-type-input').value;
+
+      return { amountInput, nameInput, typeInput };
+    },
+    didOpen: () => {
+      const amountInput = document.getElementById('expense-amount-input');
+      amountInput.addEventListener('input', formatAddExpenseAmountInput);
+      amountInput.addEventListener('keydown', restrictAmountLength);
+    },
+    willClose: () => {
+      const amountInput = document.getElementById('expense-amount-input');
+      amountInput.removeEventListener('input', formatAddExpenseAmountInput);
+      amountInput.removeEventListener('keydown', restrictAmountLength);
+    },
+  }).then((result) => {
+    if (!result.isDismissed) {
+      const { amountInput, nameInput, typeInput } = result.value;
+      const formattedAmount = formatAmountWithCommas(amountInput);
+      handleAddExpenseButtonClick(formattedAmount, nameInput, typeInput);
+    }
+  });
+}
+
+function formatAddExpenseAmountInput() {
+  const amountInput = document.getElementById('expense-amount-input');
+  const enteredAmount = amountInput.value;
+  
+    if (enteredAmount.trim() === '') {
+      return;
+    }
+  
+    const numericValue = enteredAmount.replace(/[^\d]/g, '');
+    const formattedAmount = (numericValue / 100).toFixed(2);
+    amountInput.value = formatAmountWithCommas(formattedAmount);
+}
+
 // Function to add commas for thousands separator
 function formatAmountWithCommas(amount) {
   const parts = amount.split('.');
   const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   return parts.length === 1 ? integerPart : integerPart + '.' + parts[1];
 }
-      
+
 // Function to restrict the amount input length to 9 characters
 function restrictAmountLength(event) {
   const amountInput = event.target;
@@ -326,84 +386,6 @@ function handleAddMoneyButtonClick(amount) {
       
 }
 
-// Function to fetch the expense types from the server and show the "Add Expense" dialog   
-function fetchAndShowAddExpenseDialog() {
-  fetch('/get_expense_types', {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.success) {
-         // Check if the 'names' property exists and is an array
-         const expenseTypes = data.names;
-        if (expenseTypes && Array.isArray(expenseTypes)) {
-          // Fetch the expense types data and call the 'showAddExpenseDialog' function with this data
-          showAddExpenseDialog(expenseTypes);
-        } else {
-          console.error('Error fetching expense types: Invalid data format.');
-        }
-      } else {
-        console.error('Error fetching expense types:', data.message);
-      }
-    })
-    .catch((error) => {
-      console.error('Error:', error);
-    });
-}
-
-// Function to show the "Add Expense" dialog with the fetched expense types
-function showAddExpenseDialog(expenseTypes) {
-  Swal.fire({
-    title: 'Add Expense',
-    input: 'text',
-    inputAttributes: {
-      required: true,
-      type: 'text',
-      ariaLabelledBy: 'Add expense',
-    },
-    showCancelButton: true,
-    confirmButtonText: 'Add',
-    cancelButtonText: 'Cancel',
-    inputValue: '0.00', // Initial value
-    html:
-    '<input id="expense-name-input" type="text" placeholder="Name" required class="swal2-input" maxlength="30">' +
-    '<select id="expense-type-input" required class="swal2-select">' +
-      '<option value="">Select type</option>' +
-      expenseTypes.map((type) => `<option value="${type}">${type}</option>`).join('') +
-      '</select>' ,
-    preConfirm: () => {
-      const amountInput = Swal.getInput().value;
-      const nameInput = document.getElementById('expense-name-input').value;
-      const typeInput = document.getElementById('expense-type-input').value;
-
-      return { amountInput, nameInput, typeInput };
-    },
-    didOpen: () => {
-      const amountInput = Swal.getInput();
-      amountInput.addEventListener('input', formatAmountInput);
-      amountInput.addEventListener('keydown', restrictAmountLength);
-    },
-    willClose: () => {
-      const amountInput = Swal.getInput();
-      amountInput.removeEventListener('input', formatAmountInput);
-      amountInput.removeEventListener('keydown', restrictAmountLength);
-    },
-    customClass: {
-      container: 'swal2-add-expense',
-      input: 'swal2-add-expense-amount'
-    },
-  }).then((result) => {
-    if (!result.isDismissed) {
-      const { amountInput, nameInput, typeInput } = result.value;
-      const formattedAmount = formatAmountWithCommas(amountInput);
-      handleAddExpenseButtonClick(formattedAmount, nameInput, typeInput);
-    }
-  });
-}
-
 function handleAddExpenseButtonClick(amount, name, type) {
   fetch('/add_expense', {
     method: 'POST',
@@ -420,7 +402,8 @@ function handleAddExpenseButtonClick(amount, name, type) {
     .then((data) => {
       if (data.success) {
         Swal.fire('Success', 'Expense added successfully.', 'success');
-        updateExpenses(); // Balance should also update
+        updateExpenses();
+        updateBalance();
       } else {
         Swal.fire('Error', data.message, 'error');
       }
@@ -430,6 +413,27 @@ function handleAddExpenseButtonClick(amount, name, type) {
       console.error('Error:', error);
     });
 }
+
+  // Function to fetch and update the percentages
+  async function updatePercentages() {
+    try {
+      const response = await fetch('/get_percentages');
+      const data = await response.json();
+
+      // Update the percentages in each square
+      document.getElementById('needsPercentage').innerText = `${data.needs}%`;
+      document.getElementById('wantsPercentage').innerText = `${data.wants}%`;
+      document.getElementById('savingsDebtPercentage').innerText = `${data.savingsDebt}%`;
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  }
+
+  // Call the updatePercentages function initially to populate the squares with data
+  updatePercentages();
+
+  // Set an interval to update the percentages every X seconds (e.g., 5 seconds)
+  setInterval(updatePercentages, 5000);
 
 </script>
   
