@@ -129,7 +129,7 @@
     </div>
     <!-- Square 3 -->
     <div class="col-md-6 col-lg-4 mb-4">
-      <div class="card border-0 wallet-card" style="background-color: #646464; height: 200px;">
+      <div class="card border-0 wallet-card" id="needsSquare" style="background-color: #646464; height: 200px;">
         <div class="percentage" id="needsPercentage">0.00%</div>
         <div class="card-body">
           <h4 class="type-card-title">Needs</h4>
@@ -139,7 +139,7 @@
     </div>
     <!-- Square 4 -->
     <div class="col-md-6 col-lg-4 mb-4">
-      <div class="card border-0 wallet-card" style="background-color: #646464; height: 200px;">
+      <div class="card border-0 wallet-card" id="wantsSquare" style="background-color: #646464; height: 200px;">
         <div class="percentage" id="wantsPercentage">0.00%</div>
         <div class="card-body">
           <h4 class="type-card-title">Wants</h4>
@@ -149,7 +149,7 @@
     </div>
     <!-- Square 5 -->
     <div class="col-md-6 col-lg-4 mb-4">
-      <div class="card border-0 wallet-card" style="background-color: #646464; height: 200px;">
+      <div class="card border-0 wallet-card" id="savingsDebtSquare" style="background-color: #646464; height: 200px;">
         <div class="percentage" id="savingsDebtPercentage">0.00%</div>
         <div class="card-body">
           <h4 class="type-card-title">Savings and Debt Repayment</h4>
@@ -424,10 +424,35 @@ function handleAddExpenseButtonClick(amount, name, type) {
       document.getElementById('needsPercentage').innerText = `${data.needs}%`;
       document.getElementById('wantsPercentage').innerText = `${data.wants}%`;
       document.getElementById('savingsDebtPercentage').innerText = `${data.savingsDebt}%`;
+
+      const needsPercentage = data.needs;
+      const wantsPercentage = data.wants;
+      const savingsDebtPercentage = data.savingsDebt;
+
+      updateSquareColor('needsSquare', needsPercentage, 50.00);
+      updateSquareColor('wantsSquare', wantsPercentage, 30.00);
+      updateSquareColor('savingsDebtSquare', savingsDebtPercentage, 0.00, 20.00);
+
     } catch (error) {
       console.error('Error fetching data:', error);
     }
   }
+
+  // Function to update the color of a square based on the percentage value
+  function updateSquareColor(squareId, percentage, thresholdLow, thresholdHigh) {
+  const square = document.getElementById(squareId);
+
+  if (percentage <= thresholdLow) {
+    square.style.backgroundColor = 'green';
+  } else {
+    square.style.backgroundColor = 'red';
+  }
+  if (percentage <= thresholdHigh){
+    square.style.backgroundColor = 'red';
+  } else {
+    square.style.backgroundColor = 'green';
+  }
+}
 
   // Call the updatePercentages function initially to populate the squares with data
   updatePercentages();
