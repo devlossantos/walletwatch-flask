@@ -49,16 +49,6 @@
     <div class="row mt-4">
       <div class="col-9">
 
-        <!-- Filter Menu -->
-        <div class="mb-3">
-          <div class="btn-group">
-            <button class="btn btn-outline-secondary" onclick="openFilterDialog('name')">Name</button>
-            <button class="btn btn-outline-secondary" onclick="openFilterDialog('type')">Type</button>
-            <button class="btn btn-outline-secondary" onclick="openFilterDialog('date')">Date</button>
-            <button class="btn btn-outline-secondary" onclick="openFilterDialog('user')">User</button>
-          </div>
-        </div>
-
         <!-- Expenses Table -->
         <div class="table-responsive">
           <table id="expensesTable" class="table mt-2">
@@ -126,26 +116,6 @@
       </div>
       <div class="modal-footer">
         <button type="button" onclick="addUser()">Add</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Filter Dialog -->
-<div class="modal fade" id="filterDialog" tabindex="-1" role="dialog">
-  <div class="modal-dialog modal-dialog-centered" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Filter options</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <select id="filterOptions" multiple class="form-select">
-          <!-- Options will be dynamically populated through JavaScript -->
-        </select>
-      </div>
-      <div class="modal-footer">
-        <button type="button" onclick="applyFilter()">Apply</button>
       </div>
     </div>
   </div>
@@ -255,48 +225,6 @@ function showDeleteUserConfirmation(userEmail) {
         console.log('Error:', error);
       });
   }
-    function sortExpenses(column) {
-      // Implement sorting logic based on the clicked column
-    }
-
-    function openFilterDialog(column) {
-      // Clear the previous options
-      document.getElementById('filterOptions').innerHTML = '';
-
-      // Retrieve distinct items for the selected column
-      let distinctItems = getDistinctItems(column);
-
-      // Populate the filter dialog options
-      let filterOptions = document.getElementById('filterOptions');
-      distinctItems.forEach(function(item) {
-        let option = document.createElement('option');
-        option.value = item;
-        option.text = item;
-        filterOptions.add(option);
-      });
-
-      // Show the filter dialog
-      $('#filterDialog').modal('show');
-    }
-
-    function applyFilter() {
-      // Get the selected filter options
-      let filterOptions = Array.from(document.getElementById('filterOptions').selectedOptions).map(option => option.value);
-      
-      // Implement logic to apply the selected filter options
-      // ...
-      
-      // Close the filter dialog
-      $('#filterDialog').modal('hide');
-    }
-
-    function changeItemsPerPage() {
-      // Implement logic to change the number of items per page
-    }
-
-    function nextPage() {
-      // Implement logic to navigate to the next page
-    }
 
     function showAddUserDialog() {
       Swal.fire({
@@ -357,36 +285,6 @@ function showDeleteUserConfirmation(userEmail) {
       }
     });
   }
-
-    function getDistinctItems(column) {
-      // Implement logic to retrieve distinct items for the selected column
-      // Return an array of distinct items
-      // Example implementation:
-      if (column === 'name') {
-        return ['John', 'Alice', 'Bob'];
-      } else if (column === 'category') {
-        return ['Food', 'Travel', 'Shopping'];
-      } else if (column === 'type') {
-        return ['Expense', 'Income'];
-      } else if (column === 'place') {
-        return ['Home', 'Office', 'Restaurant'];
-      }
-    }
-
-    // Execute after the DOM has loaded
-    document.addEventListener('DOMContentLoaded', function() {
-      // Initialize the modals
-      var modals = document.getElementsByClassName('modal');
-      var modalCloseButtons = document.getElementsByClassName('btn-close');
-
-      // Add event listeners to the close buttons of each modal
-      for (var i = 0; i < modals.length; i++) {
-        modalCloseButtons[i].addEventListener('click', function() {
-          var modal = this.closest('.modal');
-          $(modal).modal('hide');
-        });
-      }
-    });
 
     </script>
 </div>

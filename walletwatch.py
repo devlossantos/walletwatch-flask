@@ -8,17 +8,6 @@ import mysql.connector
 from mysql.connector import pooling
 import bcrypt
 
-# Custom decorator to check if the user is logged in
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        token = session.get('token')
-        if not token:
-            # Redirect to the login page if the token is missing
-            return redirect(url_for('login'))
-        return f(*args, **kwargs)
-    return decorated_function
-
 # Create a Flask app
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'cct'
@@ -63,6 +52,17 @@ def execute_query(query, params=None, commit=False):
     finally:
         cursor.close()
         connection.close()
+
+# Custom decorator to check if the user is logged in
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        token = session.get('token')
+        if not token:
+            # Redirect to the login page if the token is missing
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 # Function to get logged-in user's ID
 def get_logged_in_user_id():
@@ -183,6 +183,8 @@ def wallets():
 
     else:  # Request method is GET
         wallets = get_wallets()  # Fetch and sort the wallets
+
+        print("Type of wallets:", type(wallets))
 
         return render_template('wallets.html', wallets=wallets)
 
@@ -482,8 +484,13 @@ def add_expense():
     amount = data.get('amount')
     name = data.get('name')
     expense_type = data.get('type')
+    expense_wallet = data.get('wallet')
 
+    # Get the type_id for the selected expense type
     type_id = get_type_id_by_name(expense_type)
+
+    # Get the wallet_id for the selected expense wallet
+    wallet_id = get_wallet_id_by_name(expense_wallet)
 
     balance = get_balance(user_id)
 
@@ -498,6 +505,10 @@ def add_expense():
     # Validate the type
     if not type_id:
         return jsonify({'success': False, 'message': 'Please enter a valid type.'}), 400
+    
+    # Validate the type
+    if not wallet_id:
+        return jsonify({'success': False, 'message': 'Please enter a valid wallet.'}), 400
         
     if balance < float(amount.replace(',', '')):
         return jsonify({'success': False, 'message': 'Insufficient funds.'}), 400
@@ -505,12 +516,6 @@ def add_expense():
     try:
         # Convert the amount to a decimal value for storage in the expenses table
         decimal_amount = float(amount.replace(',', '').replace('.', '')) / 100
-
-        # Get the wallet_id for the wallet named "Main"
-        wallet_id = get_wallet_id_by_name("Main", user_id)
-
-        # Get the type_id for the selected expense type
-        type_id = get_type_id_by_name(expense_type)
 
         with connection_pool.get_connection() as connection:
             with connection.cursor() as cursor:
@@ -524,20 +529,23 @@ def add_expense():
         print("Error adding expense:", e)
         return jsonify({'success': False, 'message': 'An error occurred while adding the expense.'}), 500
 
-# Function to get the wallet ID based on the wallet name and user ID
-def get_wallet_id_by_name(wallet_name, user_id):
+# Function to get the wallet ID based on the wallet name
+def get_wallet_id_by_name(expense_wallet):
     try:
+        
         with connection_pool.get_connection() as connection:
             with connection.cursor() as cursor:
-                query = "SELECT wallet_id FROM wallets WHERE wallet_name = %s AND wallet_user_id = %s"
-                cursor.execute(query, (wallet_name, user_id))
+                user_id = get_logged_in_user_id()
+
+                query = "SELECT wallet_id FROM wallets WHERE wallet_user_id = %s AND wallet_name = %s"
+                cursor.execute(query,(user_id, expense_wallet))
                 result = cursor.fetchone()
 
         if result:
             return result[0]
         return None
     except Exception as e:
-        print("Error fetching wallet ID:", e)
+        print("Error fetching expense wallet ID:", e)
         return None
 
 # Function to get the type ID based on the type name
@@ -637,7 +645,23 @@ def get_names():
         return jsonify({"success": True, "names": names})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
+    
+# Get the wallets list for the dropdown field in Add expense
+@app.route('/get_wallets_list', methods=['GET'])
+def get_wallets_list():
+    try:
+        user_id = get_logged_in_user_id()
 
+        query = "SELECT wallet_name FROM wallets WHERE wallet_user_id = %s"
+
+        result = execute_query(query,(user_id,))
+        wallets = [wallet_info[0] for wallet_info in result]
+
+        return jsonify({"success": True, "wallets": wallets})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+
+# Get the percentages amount by querying the database funds and expenses table
 @app.route('/get_percentages', methods=['GET'])
 @login_required
 def get_percentages():

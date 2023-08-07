@@ -166,7 +166,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.20/dist/sweetalert2.all.min.js"></script>  
-  <script>
+<script>
 
 // Function to fetch the current balance for the logged-in user from the server
 function updateBalance() {
@@ -222,6 +222,7 @@ updateExpenses();
 
 // Function to fetch the expense types from the server and show the "Add Expense" dialog   
 function fetchAndShowAddExpenseDialog() {
+  // Fetch expense types
   fetch('/get_expense_types', {
     method: 'GET',
     headers: {
@@ -229,22 +230,41 @@ function fetchAndShowAddExpenseDialog() {
     },
   })
     .then((response) => response.json())
-    .then((data) => {
-      if (data.success) {
-         // Check if the 'names' property exists and is an array
-         const expenseTypes = data.names;
-        if (expenseTypes && Array.isArray(expenseTypes)) {
-          // Fetch the expense types data and call the 'showAddExpenseDialog' function with this data
-          showAddExpenseDialog(expenseTypes);
-        } else {
-          console.error('Error fetching expense types: Invalid data format.');
-        }
+    .then((expenseData) => {
+      if (expenseData.success) {
+        const expenseTypes = expenseData.names;
+
+        // Fetch wallets
+        fetch('/get_wallets_list', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+          .then((response) => response.json())
+          .then((walletData) => {
+            if (walletData.success) {
+              const walletList = walletData.wallets;
+
+              // Call the 'showAddExpenseDialog' function with both expense types and wallet list
+              if (expenseTypes && Array.isArray(expenseTypes) && walletList && Array.isArray(walletList)) {
+                showAddExpenseDialog(expenseTypes, walletList);
+              } else {
+                console.error('Error fetching data: Invalid data format.');
+              }
+            } else {
+              console.error('Error fetching wallets:', walletData.message);
+            }
+          })
+          .catch((walletError) => {
+            console.error('Error fetching wallets:', walletError);
+          });
       } else {
-        console.error('Error fetching expense types:', data.message);
+        console.error('Error fetching expense types:', expenseData.message);
       }
     })
-    .catch((error) => {
-      console.error('Error:', error);
+    .catch((expenseError) => {
+      console.error('Error fetching expense types:', expenseError);
     });
 }
 
@@ -290,7 +310,7 @@ function formatAddMoneyAmountInput() {
 }
 
 // Function to show the "Add Expense" dialog with the fetched expense types
-function showAddExpenseDialog(expenseTypes) {
+function showAddExpenseDialog(expenseTypes, walletList) {
   Swal.fire({
     title: 'Add Expense',
     showCancelButton: true,
@@ -302,13 +322,18 @@ function showAddExpenseDialog(expenseTypes) {
         '<select id="expense-type-input" required class="swal2-select">'+
           '<option value="">Select type</option>'+
           expenseTypes.map((type) => `<option value="${type}">${type}</option>`).join('') + 
+        '</select>' +
+        '<select id="wallet-input" required class="swal2-select">' +
+          '<option value="">Select wallet</option>' +
+          walletList.map((wallet) => `<option value="${wallet}">${wallet}</option>`).join('') +
         '</select>',
     preConfirm: () => {
       const amountInput = document.getElementById('expense-amount-input').value;
       const nameInput = document.getElementById('expense-name-input').value;
       const typeInput = document.getElementById('expense-type-input').value;
+      const walletInput = document.getElementById('wallet-input').value;
 
-      return { amountInput, nameInput, typeInput };
+      return { amountInput, nameInput, typeInput, walletInput};
     },
     didOpen: () => {
       const amountInput = document.getElementById('expense-amount-input');
@@ -322,9 +347,9 @@ function showAddExpenseDialog(expenseTypes) {
     },
   }).then((result) => {
     if (!result.isDismissed) {
-      const { amountInput, nameInput, typeInput } = result.value;
+      const { amountInput, nameInput, typeInput, walletInput } = result.value;
       const formattedAmount = formatAmountWithCommas(amountInput);
-      handleAddExpenseButtonClick(formattedAmount, nameInput, typeInput);
+      handleAddExpenseButtonClick(formattedAmount, nameInput, typeInput, walletInput);
     }
   });
 }
@@ -386,7 +411,7 @@ function handleAddMoneyButtonClick(amount) {
       
 }
 
-function handleAddExpenseButtonClick(amount, name, type) {
+function handleAddExpenseButtonClick(amount, name, type, wallet) {
   fetch('/add_expense', {
     method: 'POST',
     headers: {
@@ -396,6 +421,7 @@ function handleAddExpenseButtonClick(amount, name, type) {
       amount: amount,
       name: name,
       type: type,
+      wallet: wallet,
     }),
   })
     .then((response) => response.json())
@@ -431,7 +457,7 @@ function handleAddExpenseButtonClick(amount, name, type) {
 
       updateSquareColor('needsSquare', needsPercentage, 50.00);
       updateSquareColor('wantsSquare', wantsPercentage, 30.00);
-      updateSquareColor('savingsDebtSquare', savingsDebtPercentage, 0.00, 20.00);
+      updateSquareColor('savingsDebtSquare', savingsDebtPercentage, 20.00);
 
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -439,19 +465,39 @@ function handleAddExpenseButtonClick(amount, name, type) {
   }
 
   // Function to update the color of a square based on the percentage value
-  function updateSquareColor(squareId, percentage, thresholdLow, thresholdHigh) {
+  function updateSquareColor(squareId, percentage, thresholdLow) {
   const square = document.getElementById(squareId);
 
-  if (percentage <= thresholdLow) {
-    square.style.backgroundColor = 'green';
-  } else {
-    square.style.backgroundColor = 'red';
-  }
-  if (percentage <= thresholdHigh){
-    square.style.backgroundColor = 'red';
-  } else {
-    square.style.backgroundColor = 'green';
-  }
+  // needs
+  if(squareId == 'needsSquare'){
+    if(percentage <= thresholdLow){
+      square.style.backgroundColor = 'green';
+    }
+    else {
+      square.style.backgroundColor = 'red';
+    }
+  } 
+
+  // wants
+  if(squareId == 'wantsSquare'){
+    if(percentage <= thresholdLow){
+      square.style.backgroundColor = 'green';
+    }
+    else {
+      square.style.backgroundColor = 'red';
+    }
+  } 
+
+  // savings
+  if(squareId == 'savingsDebtSquare'){
+    if(percentage >= thresholdLow){
+      square.style.backgroundColor = 'green';
+    }
+    else {
+      square.style.backgroundColor = 'red';
+    }
+  } 
+
 }
 
   // Call the updatePercentages function initially to populate the squares with data
