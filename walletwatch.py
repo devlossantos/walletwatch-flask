@@ -162,16 +162,16 @@ def wallets():
                         FROM wallets w
                         LEFT JOIN wallets_users wu ON w.wallet_id = wu.wallet_id
                         WHERE (w.wallet_name = %s AND w.wallet_user_id = %s)
-                        OR (wu.wallet_user_id = %s)
+                        OR (wu.user_id = %s AND w.wallet_name = %s) limit 1
                     """
 
-                    print("Query:", query)
-                    print("Parameters:", (wallet_name, user_id))
-
-                    cursor.execute(query, (wallet_name, user_id))
+                    cursor.execute(query, (wallet_name, user_id, user_id, wallet_name))
                     existing_wallet = cursor.fetchone()
 
-                    if existing_wallet and existing_wallet[0] == wallet_name:
+                    print('Wallet to be added: ',existing_wallet)
+
+
+                    if existing_wallet is not None:
                         return jsonify({'message': 'That wallet already exists, try a different name'}), 409
 
                     # Insert the new wallet into the wallets table
@@ -245,7 +245,7 @@ def wallet_details(wallet_name):
         is_owner = wallet['wallet_user_id'] == user_id if user_id is not None else False
         shared_users = get_shared_users(wallet['wallet_id'])
 
-        return render_template('wallet_details.html', wallet=wallet, is_owner=is_owner, shared_users=shared_users, wallet_id=wallet['wallet_id'], users=shared_users)
+        return render_template('wallet_details.html', wallet_name=wallet_name, wallet=wallet, is_owner=is_owner, shared_users=shared_users, wallet_id=wallet['wallet_id'], users=shared_users)
     else:
         return render_template('login.html')
 
