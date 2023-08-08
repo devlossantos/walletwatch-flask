@@ -48,13 +48,16 @@
     <!-- Filter Menu Bar -->
     <div class="row mt-4">
       <div class="col-9">
-
         <!-- Expenses Table -->
         <div class="table-responsive">
           <table id="expensesTable" class="table mt-2">
             <thead>
               <tr>
-                <th></th> <!-- Checkbox column -->
+                {% if is_owner %}
+                <th><input type="checkbox" id="selectAllExpenses" onclick="selectAllExpenses()"></th>
+                {% else %}
+                <th></th>
+                {% endif %}
                 <th onclick="sortExpenses('name')">Name</th>
                 <th onclick="sortExpenses('amount')">Amount</th>
                 <th onclick="sortExpenses('type')">Type</th>
@@ -62,19 +65,26 @@
                 <th onclick="sortExpenses('user')">User</th>
               </tr>
             </thead>
-            <tbody>
-              {% for expense in expenses %}
+            <tbody id="expensesTableBody">
+              {% for expense in expenses_list %}
               <tr>
-                <td><input type="checkbox"></td>
-                <td>{{ expense.name }}</td>
-                <td>{{ expense.amount }}</td>
-                <td>{{ expense.type }}</td>
-                <td>{{ expense.date }}</td>
-                <td>{{ expense.user }}</td>
+                {% if is_owner %}
+                <td><input type="checkbox" class="expenseCheckbox" data-expense-id="{{ expense.expense_id }}"></td>
+                {% else %}
+                <td></td>
+                {% endif %}
+                <td>{{ expense.expense_name }}</td>
+                <td>{{ expense.expense_amount }}</td>
+                <td>{{ expense.type_name }}</td>
+                <td>{{ expense.expense_date }}</td>
+                <td>{{ expense.user_email }}</td>
               </tr>
-              {% endfor %}
+            {% endfor %}
             </tbody>
           </table>
+
+          <button class="delete-wallet-btn btn-focus" id="deleteExpensesBtn" style="display: none;" onclick="deleteSelectedExpenses()">Delete expense(s)</button>
+
         </div>
       </div>
 
@@ -285,6 +295,101 @@ function showDeleteUserConfirmation(userEmail) {
       }
     });
   }
+
+  // Function to fetch and populate expenses
+  function fetchExpenses(walletId) {
+  fetch(`/get_expenses_list/${walletId}`, {
+    method: 'GET',
+    credentials: 'include' // Include cookies for authentication
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        const expensesTableBody = document.getElementById('expensesTableBody');
+        expensesTableBody.innerHTML = ''; // Clear existing rows
+
+        // Populate the expenses table with fetched data
+        data.expenses_list.forEach(expense => {
+          const row = expensesTableBody.insertRow();
+          row.innerHTML = `
+            <td><input type="checkbox" class="expenseCheckbox"></td>
+            <td>${expense.name}</td> <!-- User's name -->
+            <td>${format_amount(expense.amount)}</td> <!-- Amount -->
+            <td>${expense.type}</td> <!-- Type -->
+            <td>${expense.date}</td> <!-- Date -->
+            <td>${expense.user}</td> <!-- User's email -->
+          `;
+
+          // Get the newly created checkbox element
+          const checkbox = row.querySelector('.expenseCheckbox');
+
+          // Attach an event listener to the checkbox
+          checkbox.addEventListener('click', updateDeleteButtonState);
+        });
+      } else {
+        console.error(data.message);
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+    });
+}
+
+// Call the fetchExpenses function when the page loads
+document.addEventListener('DOMContentLoaded', function () {
+
+  // Fetch and display expenses for the current wallet
+  const walletId = '{{ wallet.wallet_id }}';
+  fetchExpenses(walletId);
+});
+
+function format_amount(amount) {
+        const formatter = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+        return formatter.format(amount);
+}
+
+function selectAllExpenses() {
+
+    const selectAllCheckbox = document.getElementById('selectAllExpenses');
+    const expenseCheckboxes = document.querySelectorAll('.expenseCheckbox');
+
+    const selectAll = selectAllCheckbox.checked;
+
+    expenseCheckboxes.forEach(checkbox => {
+        checkbox.checked = selectAll;
+    });
+
+    updateDeleteButtonState();
+}
+
+function updateDeleteButtonState() {
+    const expenseCheckboxes = document.querySelectorAll('.expenseCheckbox');
+    const deleteExpensesBtn = document.getElementById('deleteExpensesBtn');
+    const selectAllCheckbox = document.getElementById('selectAllExpenses');
+
+    let atLeastOneSelected = false;
+
+    expenseCheckboxes.forEach(checkbox => {
+        if (checkbox.checked) {
+            atLeastOneSelected = true;
+            return;
+        }
+    });
+
+    // Update the state of the "Select All" checkbox
+    selectAllCheckbox.checked = atLeastOneSelected;
+
+    if (atLeastOneSelected) {
+        deleteExpensesBtn.style.display = 'block';
+    } else {
+        deleteExpensesBtn.style.display = 'none';
+    }
+}
 
     </script>
 </div>

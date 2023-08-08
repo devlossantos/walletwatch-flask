@@ -157,11 +157,21 @@ def wallets():
                 with connection.cursor() as cursor:
 
                     # Check if the wallet name already exists for the user
-                    query = "SELECT * FROM wallets WHERE wallet_name = %s AND wallet_user_id = %s"
+                    query = """
+                        SELECT w.wallet_id
+                        FROM wallets w
+                        LEFT JOIN wallets_users wu ON w.wallet_id = wu.wallet_id
+                        WHERE (w.wallet_name = %s AND w.wallet_user_id = %s)
+                        OR (wu.wallet_user_id = %s)
+                    """
+
+                    print("Query:", query)
+                    print("Parameters:", (wallet_name, user_id))
+
                     cursor.execute(query, (wallet_name, user_id))
                     existing_wallet = cursor.fetchone()
 
-                    if existing_wallet:
+                    if existing_wallet and existing_wallet[0] == wallet_name:
                         return jsonify({'message': 'That wallet already exists, try a different name'}), 409
 
                     # Insert the new wallet into the wallets table
@@ -183,8 +193,6 @@ def wallets():
 
     else:  # Request method is GET
         wallets = get_wallets()  # Fetch and sort the wallets
-
-        print("Type of wallets:", type(wallets))
 
         return render_template('wallets.html', wallets=wallets)
 
@@ -648,13 +656,19 @@ def get_names():
     
 # Get the wallets list for the dropdown field in Add expense
 @app.route('/get_wallets_list', methods=['GET'])
+@login_required
 def get_wallets_list():
     try:
         user_id = get_logged_in_user_id()
 
-        query = "SELECT wallet_name FROM wallets WHERE wallet_user_id = %s"
+        query = """
+            SELECT DISTINCT w.wallet_name
+            FROM wallets AS w
+            LEFT JOIN wallets_users AS wu ON w.wallet_id = wu.wallet_id
+            WHERE w.wallet_user_id = %s OR wu.user_id = %s
+        """
 
-        result = execute_query(query,(user_id,))
+        result = execute_query(query, (user_id, user_id))
         wallets = [wallet_info[0] for wallet_info in result]
 
         return jsonify({"success": True, "wallets": wallets})
@@ -707,6 +721,63 @@ def get_percentages():
     except Exception as e:
         print("Error fetching percentages:", e)
         return jsonify({'message': 'An error occurred while fetching percentages.'}), 500
+    
+# Get the list of expenses to fill the table inside each wallet
+@app.route('/get_expenses_list/<wallet_id>', methods=['GET'])
+@login_required
+def get_expenses_list(wallet_id):
+    try:
+        query = """
+            SELECT e.expense_name, e.expense_amount, et.type_name, e.expense_date, u.user_email
+            FROM expenses e
+            JOIN types et ON e.expense_type_id = et.type_id
+            JOIN users u ON e.expense_user_id = u.user_id
+            WHERE e.expense_wallet_id = %s
+        """
+
+        result = execute_query(query, (wallet_id,))
+
+        expenses_list = [
+            {
+                "name": expense[0],
+                "amount": expense[1],
+                "type": expense[2],
+                "date": expense[3],
+                "user": expense[4]
+            }
+            for expense in result
+        ]
+
+        return jsonify({"success": True, "expenses_list": expenses_list})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+    
+@app.route('/delete_expense/<int:expense_id>', methods=['DELETE'])
+@login_required
+def delete_expense(expense_id):
+    try:
+        with connection_pool.get_connection() as connection:
+            with connection.cursor() as cursor:
+                # Get the user ID of the logged-in user
+                user_id = get_logged_in_user_id()
+
+                # Check if the expense belongs to the logged-in user
+                query = "SELECT expense_user_id FROM expenses WHERE expense_id = %s"
+                cursor.execute(query, (expense_id,))
+                expense_user_id = cursor.fetchone()[0]
+
+                if expense_user_id != user_id:
+                    return jsonify({'message': 'You do not have permission to delete this expense'}), 403
+
+                # Delete the expense from the database
+                delete_query = "DELETE FROM expenses WHERE expense_id = %s"
+                cursor.execute(delete_query, (expense_id,))
+                connection.commit()
+
+                return jsonify({'message': 'Expense deleted successfully'})
+
+    except Exception as e:
+        return jsonify({'message': 'An error occurred while deleting the expense.'}), 500
 
 # Logout route
 @app.route('/logout')
