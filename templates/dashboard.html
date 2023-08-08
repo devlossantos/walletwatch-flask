@@ -323,17 +323,17 @@ function showAddExpenseDialog(expenseTypes, walletList) {
           '<option value="">Select type</option>'+
           expenseTypes.map((type) => `<option value="${type}">${type}</option>`).join('') + 
         '</select>' +
-        '<select id="wallet-input" required class="swal2-select">' +
+        '<select id="expense-wallet-input" required class="swal2-select">' +
           '<option value="">Select wallet</option>' +
           walletList.map((wallet) => `<option value="${wallet}">${wallet}</option>`).join('') +
         '</select>',
     preConfirm: () => {
       const amountInput = document.getElementById('expense-amount-input').value;
       const nameInput = document.getElementById('expense-name-input').value;
-      const typeInput = document.getElementById('expense-type-input').value;
-      const walletInput = document.getElementById('wallet-input').value;
+      const typeSelection = document.getElementById('expense-type-input').value;
+      const walletSelection = document.getElementById('expense-wallet-input').value;
 
-      return { amountInput, nameInput, typeInput, walletInput};
+      return { amountInput, nameInput, typeSelection, walletSelection};
     },
     didOpen: () => {
       const amountInput = document.getElementById('expense-amount-input');
@@ -347,9 +347,9 @@ function showAddExpenseDialog(expenseTypes, walletList) {
     },
   }).then((result) => {
     if (!result.isDismissed) {
-      const { amountInput, nameInput, typeInput, walletInput } = result.value;
+      const { amountInput, nameInput, typeSelection, walletSelection } = result.value;
       const formattedAmount = formatAmountWithCommas(amountInput);
-      handleAddExpenseButtonClick(formattedAmount, nameInput, typeInput, walletInput);
+      handleAddExpenseButtonClick(formattedAmount, nameInput, typeSelection, walletSelection);
     }
   });
 }

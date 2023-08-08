@@ -513,10 +513,7 @@ def add_expense():
     # Validate the type
     if not type_id:
         return jsonify({'success': False, 'message': 'Please enter a valid type.'}), 400
-    
-    # Validate the type
-    if not wallet_id:
-        return jsonify({'success': False, 'message': 'Please enter a valid wallet.'}), 400
+
         
     if balance < float(amount.replace(',', '')):
         return jsonify({'success': False, 'message': 'Insufficient funds.'}), 400
@@ -537,23 +534,18 @@ def add_expense():
         print("Error adding expense:", e)
         return jsonify({'success': False, 'message': 'An error occurred while adding the expense.'}), 500
 
-# Function to get the wallet ID based on the wallet name
-def get_wallet_id_by_name(expense_wallet):
+def get_wallet_id_by_name(wallet_name):
     try:
-        
         with connection_pool.get_connection() as connection:
             with connection.cursor() as cursor:
-                user_id = get_logged_in_user_id()
-
-                query = "SELECT wallet_id FROM wallets WHERE wallet_user_id = %s AND wallet_name = %s"
-                cursor.execute(query,(user_id, expense_wallet))
-                result = cursor.fetchone()
-
-        if result:
-            return result[0]
-        return None
+                query = "SELECT wallet_id FROM wallets WHERE wallet_name = %s"
+                cursor.execute(query, (wallet_name,))
+                wallet = cursor.fetchone()
+                if wallet:
+                    return wallet[0]
+                return None
     except Exception as e:
-        print("Error fetching expense wallet ID:", e)
+        print("Error retrieving wallet ID by name:", e)
         return None
 
 # Function to get the type ID based on the type name
