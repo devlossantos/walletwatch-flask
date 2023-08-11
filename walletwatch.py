@@ -4,7 +4,6 @@ from flask import redirect, url_for
 import jwt
 from functools import wraps
 from datetime import datetime, timedelta
-import mysql.connector
 from mysql.connector import pooling
 import bcrypt
 
@@ -168,9 +167,6 @@ def wallets():
                     cursor.execute(query, (wallet_name, user_id, user_id, wallet_name))
                     existing_wallet = cursor.fetchone()
 
-                    print('Wallet to be added: ',existing_wallet)
-
-
                     if existing_wallet is not None:
                         return jsonify({'message': 'That wallet already exists, try a different name'}), 409
 
@@ -291,7 +287,6 @@ def delete_wallet():
     return jsonify({'message': 'Wallet not found'}), 404
 
 def get_shared_users(wallet_id):
-    # Fetch the shared users for the given wallet ID
     owner_id = get_logged_in_user_id()
     
     try:
@@ -397,7 +392,7 @@ def add_user():
 @login_required
 def delete_user():
     user_email = request.json.get('user_email')
-    wallet_id = request.json.get('wallet_id')  # Get the wallet ID from the request JSON
+    wallet_id = request.json.get('wallet_id')
     owner_id = get_logged_in_user_id()
 
     if user_email and wallet_id and owner_id is not None:
@@ -494,6 +489,7 @@ def add_expense():
     expense_type = data.get('type')
     expense_wallet = data.get('wallet')
 
+
     # Get the type_id for the selected expense type
     type_id = get_type_id_by_name(expense_type)
 
@@ -534,16 +530,23 @@ def add_expense():
         print("Error adding expense:", e)
         return jsonify({'success': False, 'message': 'An error occurred while adding the expense.'}), 500
 
-def get_wallet_id_by_name(wallet_name):
+def get_wallet_id_by_name(expense_wallet):
     try:
+        user_id = get_logged_in_user_id()
         with connection_pool.get_connection() as connection:
             with connection.cursor() as cursor:
-                query = "SELECT wallet_id FROM wallets WHERE wallet_name = %s"
-                cursor.execute(query, (wallet_name,))
-                wallet = cursor.fetchone()
-                if wallet:
-                    return wallet[0]
-                return None
+                query = """
+                    SELECT wu.wallet_id
+                    FROM wallets_users wu
+                    INNER JOIN wallets w ON wu.wallet_id = w.wallet_id
+                    WHERE w.wallet_name = %s AND wu.user_id = %s
+                """
+                cursor.execute(query, (expense_wallet,user_id))
+                result = cursor.fetchone()
+
+            if result:
+                    return result[0]
+            return None
     except Exception as e:
         print("Error retrieving wallet ID by name:", e)
         return None
@@ -720,22 +723,24 @@ def get_percentages():
 def get_expenses_list(wallet_id):
     try:
         query = """
-            SELECT e.expense_name, e.expense_amount, et.type_name, e.expense_date, u.user_email
+            SELECT e.expense_id, e.expense_name, e.expense_amount, et.type_name, e.expense_date, u.user_email
             FROM expenses e
             JOIN types et ON e.expense_type_id = et.type_id
             JOIN users u ON e.expense_user_id = u.user_id
             WHERE e.expense_wallet_id = %s
+            ORDER BY e.expense_date DESC
         """
 
         result = execute_query(query, (wallet_id,))
 
         expenses_list = [
             {
-                "name": expense[0],
-                "amount": expense[1],
-                "type": expense[2],
-                "date": expense[3],
-                "user": expense[4]
+                "expense_id": expense[0],
+                "name": expense[1],
+                "amount": expense[2],
+                "type": expense[3],
+                "date": expense[4],
+                "user": expense[5]
             }
             for expense in result
         ]
@@ -743,33 +748,6 @@ def get_expenses_list(wallet_id):
         return jsonify({"success": True, "expenses_list": expenses_list})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
-    
-@app.route('/delete_expense/<int:expense_id>', methods=['DELETE'])
-@login_required
-def delete_expense(expense_id):
-    try:
-        with connection_pool.get_connection() as connection:
-            with connection.cursor() as cursor:
-                # Get the user ID of the logged-in user
-                user_id = get_logged_in_user_id()
-
-                # Check if the expense belongs to the logged-in user
-                query = "SELECT expense_user_id FROM expenses WHERE expense_id = %s"
-                cursor.execute(query, (expense_id,))
-                expense_user_id = cursor.fetchone()[0]
-
-                if expense_user_id != user_id:
-                    return jsonify({'message': 'You do not have permission to delete this expense'}), 403
-
-                # Delete the expense from the database
-                delete_query = "DELETE FROM expenses WHERE expense_id = %s"
-                cursor.execute(delete_query, (expense_id,))
-                connection.commit()
-
-                return jsonify({'message': 'Expense deleted successfully'})
-
-    except Exception as e:
-        return jsonify({'message': 'An error occurred while deleting the expense.'}), 500
 
 # Logout route
 @app.route('/logout')

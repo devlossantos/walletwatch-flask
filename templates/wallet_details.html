@@ -3,112 +3,94 @@
 {% block content %}
 
 <style>
+  .delete-wallet-btn,
+  .delete-user-btn,
+  .add-user-btn {
+    background-color: #ff0000;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-right: 10px;
+  }
 
-.delete-wallet-btn {
-  background-color: #ff0000;
-  color: #fff;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  padding: 10px 20px;
-  margin-right: 10px;
-}
+  .add-user-btn {
+    background-color: #2b82c9;
+    padding: 5px 10px;
+  }
 
-.btn-focus:focus {
+  .btn-focus:focus {
     outline: none;
-}
+  }
 
-.delete-user-btn {
-  background-color: #ff0000;
-  color: #fff;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  margin-right: 10px;
-}
+  .selected {
+    background-color: #ffd4d4;
+  }
 
-.add-user-btn {
-  background-color: #2b82c9;
-  color: #fff;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  padding: 5px 10px;
-  margin-right: 10px;
-}
+  .table-striped tr:nth-child(odd) {
+    background-color: #f8f9fa; /* Light grey color for odd rows */
+  }
 
 </style>
 
 <div class="container">
-    <!-- Wallet Details -->
-    <h2 class="mt-5">{{ wallet.wallet_name }}</h2>
-    {% if is_owner %}
+  <!-- Wallet Details -->
+  <h2 class="mt-5">{{ wallet.wallet_name }}</h2>
+  {% if is_owner %}
     <button class="delete-wallet-btn btn-focus" onclick="showDeleteWalletConfirmation('{{ wallet.wallet_id }}')">Delete wallet</button>
-    {% endif %}
-    <!-- Filter Menu Bar -->
-    <div class="row mt-4">
-      <div class="col-9">
-        <!-- Expenses Table -->
-        <div class="table-responsive">
-          <table id="expensesTable" class="table mt-2">
-            <thead>
-              <tr>
-                {% if is_owner %}
-                <th><input type="checkbox" id="selectAllExpenses" onclick="selectAllExpenses()"></th>
-                {% else %}
-                <th></th>
-                {% endif %}
-                <th onclick="sortExpenses('name')">Name</th>
-                <th onclick="sortExpenses('amount')">Amount</th>
-                <th onclick="sortExpenses('type')">Type</th>
-                <th onclick="sortExpenses('date')">Date</th>
-                <th onclick="sortExpenses('user')">User</th>
-              </tr>
-            </thead>
-            <tbody id="expensesTableBody">
-              {% for expense in expenses_list %}
-              <tr>
-                {% if is_owner %}
-                <td><input type="checkbox" class="expenseCheckbox"></td>
-                {% else %}
-                <td></td>
-                {% endif %}
+  {% endif %}
+  
+  <!-- Filter Menu Bar -->
+  <div class="row mt-4">
+    <div class="col-9">
+      <!-- Expenses Table -->
+      <div class="table-responsive">
+        <table id="expensesTable" class="table mt-2 table-striped">
+          <thead>
+            <tr>
+              <th onclick="sortExpenses('name')" style="cursor: pointer;">Name <span id="nameSortIcon"></span></th>
+              <th onclick="sortExpenses('amount')" style="cursor: pointer;">Amount <span id="amountSortIcon"></span></th>
+              <th onclick="sortExpenses('type')" style="cursor: pointer;">Type <span id="typeSortIcon"></span></th>
+              <th onclick="sortExpenses('date')" style="cursor: pointer;">Date <span id="dateSortIcon"></span></th>
+              <th onclick="sortExpenses('user')" style="cursor: pointer;">User <span id="userSortIcon"></span></th>
+            </tr>
+          </thead>          
+          <tbody id="expensesTableBody">
+            {% for expense in expenses_list %}
+              <tr data-expense-id="{{ expense.expense_id }}" onclick="handleExpenseClick(event, '{{ expense.expense_id }}')">
                 <td>{{ expense.expense_name }}</td>
                 <td>{{ expense.expense_amount }}</td>
                 <td>{{ expense.type_name }}</td>
                 <td>{{ expense.expense_date }}</td>
                 <td>{{ expense.user_email }}</td>
-              </tr>
+              </tr>            
             {% endfor %}
-            </tbody>
-          </table>
-
-          <button class="delete-wallet-btn btn-focus" id="deleteExpensesBtn" style="display: none;" onclick="deleteSelectedExpenses()">Delete expense(s)</button>
-
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% if is_owner and wallet_name != "Main" %}
+      <div class="col-3">
+        <div class="card-body d-flex flex-column justify-content-between align-items-center h-100">
+          <h5 class="card-title mb-0">Users in this wallet</h5>
+          <button class="add-user-btn btn-focus mt-2" onclick="showAddUserDialog()">Add user</button>
+          <div class="list-group flex-grow-1 mt-2">
+            {% if shared_users %}
+              {% for shared_user in shared_users %}
+                <div class="user-item d-flex justify-content-between align-items-center">
+                  <div>{{ shared_user }}</div>
+                  {% if is_owner %}
+                    <button class="delete-user-btn btn-focus" onclick="showDeleteUserConfirmation('{{ shared_user }}')">Delete</button>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            {% else %}
+              <p class="user-item d-flex justify-content-between align-items-center">This wallet is not shared</p>
+            {% endif %}
+          </div>
         </div>
       </div>
-      {% if is_owner and wallet_name != "Main" %}
-      <div class="col-3">
-              <div class="card-body d-flex flex-column justify-content-between align-items-center h-100">
-                  <h5 class="card-title mb-0">Users in this wallet</h5>
-                  <button class="add-user-btn btn-focus mt-2" onclick="showAddUserDialog()">Add user</button>
-                  <div class="list-group flex-grow-1 mt-2">
-                      {% if shared_users %}
-                      {% for shared_user in shared_users %}
-                      <div class="user-item d-flex justify-content-between align-items-center">
-                          <div>{{ shared_user }}</div>
-                          {% if is_owner %}
-                          <button class="delete-user-btn btn-focus" onclick="showDeleteUserConfirmation('{{ shared_user }}')">Delete</button>
-                          {% endif %}
-                      </div>
-                      {% endfor %}
-                      {% else %}
-                      <p class="user-item d-flex justify-content-between align-items-center">This wallet is not shared</p>
-                      {% endif %}
-                  </div>
-              </div>
-          </div>
-      {% endif %}
+    {% endif %}
   </div>
                 
 <!-- Add User Dialog -->
@@ -131,8 +113,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.18/dist/sweetalert2.all.min.js"></script>
 
-    <script>
-    
+<script>
+ 
     function showDeleteWalletConfirmation(wallet_id) {
       
       Swal.fire({
@@ -298,7 +280,7 @@ function showDeleteUserConfirmation(userEmail) {
   function fetchExpenses(walletId) {
   fetch(`/get_expenses_list/${walletId}`, {
     method: 'GET',
-    credentials: 'include' // Include cookies for authentication
+    credentials: 'include'
   })
     .then(response => response.json())
     .then(data => {
@@ -310,19 +292,12 @@ function showDeleteUserConfirmation(userEmail) {
         data.expenses_list.forEach(expense => {
           const row = expensesTableBody.insertRow();
           row.innerHTML = `
-            <td><input type="checkbox" class="expenseCheckbox"></td>
             <td>${expense.name}</td> <!-- User's name -->
             <td>${format_amount(expense.amount)}</td> <!-- Amount -->
             <td>${expense.type}</td> <!-- Type -->
             <td>${expense.date}</td> <!-- Date -->
             <td>${expense.user}</td> <!-- User's email -->
           `;
-
-          // Get the newly created checkbox element
-          const checkbox = row.querySelector('.expenseCheckbox');
-
-          // Attach an event listener to the checkbox
-          checkbox.addEventListener('click', updateDeleteButtonState);
         });
       } else {
         console.error(data.message);
@@ -335,10 +310,10 @@ function showDeleteUserConfirmation(userEmail) {
 
 // Call the fetchExpenses function when the page loads
 document.addEventListener('DOMContentLoaded', function () {
-
-  // Fetch and display expenses for the current wallet
   const walletId = '{{ wallet.wallet_id }}';
+  
   fetchExpenses(walletId);
+
 });
 
 function format_amount(amount) {
@@ -351,46 +326,104 @@ function format_amount(amount) {
         return formatter.format(amount);
 }
 
-function selectAllExpenses() {
+// Array to store selected expense IDs
+const selectedExpenses = [];
 
-    const selectAllCheckbox = document.getElementById('selectAllExpenses');
-    const expenseCheckboxes = document.querySelectorAll('.expenseCheckbox');
-
-    const selectAll = selectAllCheckbox.checked;
-
-    expenseCheckboxes.forEach(checkbox => {
-        checkbox.checked = selectAll;
-    });
-
-    updateDeleteButtonState();
-}
-
-function updateDeleteButtonState() {
-    const expenseCheckboxes = document.querySelectorAll('.expenseCheckbox');
-    const deleteExpensesBtn = document.getElementById('deleteExpensesBtn');
-    const selectAllCheckbox = document.getElementById('selectAllExpenses');
-
-    let atLeastOneSelected = false;
-    let allChecksAreSelected = true; // Assume all are selected initially
-
-    expenseCheckboxes.forEach(checkbox => {
-        if (checkbox.checked) {
-            atLeastOneSelected = true;
-        } else {
-            allChecksAreSelected = false; // If any is not selected, update the flag
-        }
-    });
-
-    // Update the state of the "Select All" checkbox
-    selectAllCheckbox.checked = allChecksAreSelected;
-
-    if (atLeastOneSelected) {
-        deleteExpensesBtn.style.display = 'block';
+// Function to toggle selection of an expense
+function toggleExpenseSelection(expenseId) {
+    const index = selectedExpenses.indexOf(expenseId);
+    if (index === -1) {
+      selectedExpenses.push(expenseId);
     } else {
-        deleteExpensesBtn.style.display = 'none';
+      selectedExpenses.splice(index, 1);
     }
+    updateExpenseSelectionUI();
+  }
+
+  // Function to update the UI based on selected expenses
+  function updateExpenseSelectionUI() {
+    const expensesRows = document.querySelectorAll('#expensesTableBody tr');
+    expensesRows.forEach(row => {
+      const expenseId = row.getAttribute('data-expense-id');
+      if (selectedExpenses.includes(expenseId)) {
+        row.classList.add('selected');
+      } else {
+        row.classList.remove('selected');
+      }
+    });
+  }
+
+  // Function to handle Ctrl key press and clicking on expenses
+  function handleExpenseClick(event, expenseId) {
+    console.log('Expense clicked:', expenseId);
+    if (event.ctrlKey || event.metaKey) {
+      event.preventDefault();
+      console.log('Control key pressed');
+      toggleExpenseSelection(expenseId);
+    }
+  }
+
+let sortStatus = {};
+
+// Define the getSortIndex function
+function getSortIndex(sortKey) {
+  const headers = ['name', 'amount', 'type', 'date', 'user'];
+  return headers.indexOf(sortKey);
 }
 
-    </script>
+function sortExpenses(sortKey) {
+  const expensesRows = Array.from(document.querySelectorAll('#expensesTableBody tr'));
+  const headers = ['name', 'amount', 'type', 'date', 'user'];
+
+  // Reset sort icons for all columns except the current one
+  headers.forEach(header => {
+    if (header !== sortKey) {
+      const otherSortIcon = document.getElementById(`${header}SortIcon`);
+      otherSortIcon.innerHTML = '';
+    }
+  });
+
+  const sortIcon = document.getElementById(`${sortKey}SortIcon`);
+
+  if (sortStatus[sortKey] === 'asc') {
+    sortStatus[sortKey] = 'desc'; // Toggle to descending order
+    sortIcon.innerHTML = '▼'; // Downward-pointing triangle for descending
+  } else {
+    sortStatus[sortKey] = 'asc'; // Toggle to ascending order
+    sortIcon.innerHTML = '▲'; // Upward-pointing triangle for ascending
+  }
+
+  expensesRows.sort((a, b) => {
+    const aData = a.querySelector(`td:nth-child(${getSortIndex(sortKey) + 1})`).textContent;
+    const bData = b.querySelector(`td:nth-child(${getSortIndex(sortKey) + 1})`).textContent;
+
+    if (sortKey === 'amount') {
+      const aValue = parseFloat(aData.replace(/[^0-9.-]+/g, ""));
+      const bValue = parseFloat(bData.replace(/[^0-9.-]+/g, ""));
+
+      // Sort in ascending or descending order based on sort status
+      if (sortStatus[sortKey] === 'asc') {
+        return aValue - bValue;
+      } else {
+        return bValue - aValue;
+      }
+    } else {
+      // For non-numeric columns, perform string-based sorting
+      if (sortStatus[sortKey] === 'asc') {
+        return aData.localeCompare(bData);
+      } else {
+        return bData.localeCompare(aData);
+      }
+    }
+  });
+
+  expensesTableBody.innerHTML = ''; // Clear the existing table body
+
+  expensesRows.forEach(row => {
+    expensesTableBody.appendChild(row); // Append sorted rows back to the table body
+  });
+}
+
+</script>
 </div>
 {% endblock %}
