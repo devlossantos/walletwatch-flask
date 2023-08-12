@@ -123,7 +123,7 @@ def login():
                 main_wallet = execute_query(query, (user_id, "Main"))
 
                 if not main_wallet:
-                    query = "INSERT INTO wallets (wallet_name, wallet_status, wallet_user_id) VALUES (%s, 'Active', %s)"
+                    query = "INSERT INTO wallets (wallet_name, wallet_status, wallet_user_id) VALUES (%s, 'Open', %s)"
                     wallet_id = execute_query(query, ("Main", user_id), commit=True)
 
                     query = "INSERT INTO wallets_users (wallet_id, user_id) VALUES (%s, %s)"
@@ -241,50 +241,41 @@ def wallet_details(wallet_name):
         is_owner = wallet['wallet_user_id'] == user_id if user_id is not None else False
         shared_users = get_shared_users(wallet['wallet_id'])
 
-        return render_template('wallet_details.html', wallet_name=wallet_name, wallet=wallet, is_owner=is_owner, shared_users=shared_users, wallet_id=wallet['wallet_id'], users=shared_users)
+        return render_template('wallet_details.html', wallet_status=wallet['wallet_status'], wallet_name=wallet_name, wallet=wallet, is_owner=is_owner, shared_users=shared_users, wallet_id=wallet['wallet_id'], users=shared_users)
     else:
         return render_template('login.html')
 
-@app.route('/delete_wallet', methods=['POST'])
+@app.route('/close_wallet/<wallet_id>', methods=['POST'])
 @login_required
-def delete_wallet():
-    wallet_id = request.json.get('wallet_id')
+def close_wallet(wallet_id):
+    try:
+        with connection_pool.get_connection() as connection:
+            with connection.cursor() as cursor:
+                # Update the wallet status to 'Closed'
+                query = "UPDATE wallets SET wallet_status = 'Closed' WHERE wallet_id = %s"
+                cursor.execute(query, (wallet_id,))
+                connection.commit()
 
-    if wallet_id:
-        try:
-            with connection_pool.get_connection() as connection:
-                with connection.cursor() as cursor:
-                    # Get the wallet name for the provided wallet_id
-                    query = "SELECT wallet_name FROM wallets WHERE wallet_id = %s"
-                    cursor.execute(query, (wallet_id,))
-                    wallet_data = cursor.fetchone()
+            return jsonify({'message': 'Wallet closed successfully'})
 
-                    wallet_name = wallet_data[0]
+    except Exception as e:
+        return jsonify({'message': 'An error occurred while closing the wallet.'}), 500
 
-                    # Check if the wallet is the main wallet
-                    if wallet_name == "Main":
-                        return jsonify({'message': 'Your main wallet cannot be deleted.'}), 403
+@app.route('/open_wallet/<wallet_id>', methods=['POST'])
+@login_required
+def open_wallet(wallet_id):
+    try:
+        with connection_pool.get_connection() as connection:
+            with connection.cursor() as cursor:
+                # Update the wallet status to 'Open'
+                query = "UPDATE wallets SET wallet_status = 'Open' WHERE wallet_id = %s"
+                cursor.execute(query, (wallet_id,))
+                connection.commit()
 
-                    # Combined DELETE query
-                    combined_delete_query = """
-                    DELETE wu, e, w
-                    FROM wallets_users AS wu
-                    LEFT JOIN expenses AS e ON wu.wallet_id = e.expense_wallet_id
-                    LEFT JOIN wallets AS w ON wu.wallet_id = w.wallet_id
-                    WHERE wu.wallet_id = %s
-                    """
+            return jsonify({'message': 'Wallet opened successfully'})
 
-                    # Execute the combined DELETE query
-                    cursor.execute(combined_delete_query, (wallet_id,))
-                    connection.commit()
-
-                return jsonify({'message': 'Wallet deleted successfully'})
-
-        except Exception as e:
-            return jsonify({'message': 'An error occurred while deleting the wallet.'}), 500
-
-    # Wallet ID not provided
-    return jsonify({'message': 'Wallet not found'}), 404
+    except Exception as e:
+        return jsonify({'message': 'An error occurred while opening the wallet.'}), 500
 
 def get_shared_users(wallet_id):
     owner_id = get_logged_in_user_id()
@@ -387,10 +378,9 @@ def add_user():
     # User email not provided
     return jsonify({'message': 'Email required'}), 400
 
-# Delete user route
-@app.route('/delete_user', methods=['POST'])
+@app.route('/remove_user', methods=['POST'])
 @login_required
-def delete_user():
+def remove_user():
     user_email = request.json.get('user_email')
     wallet_id = request.json.get('wallet_id')
     owner_id = get_logged_in_user_id()
@@ -400,45 +390,31 @@ def delete_user():
         try:
             with connection_pool.get_connection() as connection:
                 with connection.cursor() as cursor:
-                    # Check if the user to be deleted exists
+                    # Check if the user to be removed exists
                     query = "SELECT * FROM users WHERE user_email = %s"
                     cursor.execute(query, (user_email,))
                     user = cursor.fetchone()
 
             if user:
-
                 with connection_pool.get_connection() as connection:
                     with connection.cursor() as cursor:
-                        # Check if the logged-in user is the owner of the wallet
-                        query = "SELECT * FROM wallets WHERE wallet_id = %s AND wallet_user_id = %s"
-                        cursor.execute(query, (wallet_id, owner_id))
-                        wallet = cursor.fetchone()
-
-                if wallet:
-
-                    with connection_pool.get_connection() as connection:
-                        with connection.cursor() as cursor:
-                            # Check if the user to be deleted is a shared user of the wallet
-                            query = "SELECT * FROM wallets_users WHERE wallet_id = %s AND user_id = %s"
-                            cursor.execute(query, (wallet_id, user[0]))
-                            wallet_user = cursor.fetchone()
+                        # Check if the user to be removed is a shared user of the wallet
+                        query = "SELECT * FROM wallets_users WHERE wallet_id = %s AND user_id = %s"
+                        cursor.execute(query, (wallet_id, user[0]))
+                        wallet_user = cursor.fetchone()
 
                     if wallet_user:
-
                         with connection_pool.get_connection() as connection:
                             with connection.cursor() as cursor:
-                                # Delete the user from the wallets_users table
+                            # Remove the user from the wallets_users table
                                 query = "DELETE FROM wallets_users WHERE wallet_id = %s AND user_id = %s"
                                 cursor.execute(query, (wallet_id, user[0]))
                                 connection.commit()
 
-                        return jsonify({'message': 'User deleted successfully'})
+                        return jsonify({'message': 'User removed successfully'})
 
                     # User is not a shared user of the wallet
                     return jsonify({'message': 'User is not associated with this wallet'}), 404
-
-                # User is not the owner of the wallet
-                return jsonify({'message': 'You do not have permission to delete users from this wallet'}), 403
 
             # User does not exist
             return jsonify({'message': 'User does not exist'}), 404
@@ -489,11 +465,8 @@ def add_expense():
     expense_type = data.get('type')
     expense_wallet = data.get('wallet')
 
-
-    # Get the type_id for the selected expense type
     type_id = get_type_id_by_name(expense_type)
 
-    # Get the wallet_id for the selected expense wallet
     wallet_id = get_wallet_id_by_name(expense_wallet)
 
     balance = get_balance(user_id)
@@ -510,7 +483,11 @@ def add_expense():
     if not type_id:
         return jsonify({'success': False, 'message': 'Please enter a valid type.'}), 400
 
-        
+    # Check if the wallet is open
+    wallet_status = get_wallet_status(wallet_id)
+    if wallet_status != 'Open':
+        return jsonify({'success': False, 'message': 'You can only add expenses to open wallets.'}), 403
+
     if balance < float(amount.replace(',', '')):
         return jsonify({'success': False, 'message': 'Insufficient funds.'}), 400
 
@@ -529,6 +506,21 @@ def add_expense():
     except Exception as e:
         print("Error adding expense:", e)
         return jsonify({'success': False, 'message': 'An error occurred while adding the expense.'}), 500
+
+def get_wallet_status(wallet_id):
+    try:
+        with connection_pool.get_connection() as connection:
+            with connection.cursor() as cursor:
+                query = "SELECT wallet_status FROM wallets WHERE wallet_id = %s"
+                cursor.execute(query, (wallet_id,))
+                wallet_data = cursor.fetchone()
+                if wallet_data:
+                    return wallet_data[0]
+                else:
+                    return None
+    except Exception as e:
+        print("Error getting wallet status:", e)
+        return None
 
 def get_wallet_id_by_name(expense_wallet):
     try:
@@ -649,7 +641,6 @@ def get_names():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
     
-# Get the wallets list for the dropdown field in Add expense
 @app.route('/get_wallets_list', methods=['GET'])
 @login_required
 def get_wallets_list():
@@ -657,16 +648,21 @@ def get_wallets_list():
         user_id = get_logged_in_user_id()
 
         query = """
-            SELECT DISTINCT w.wallet_name
+            SELECT DISTINCT w.wallet_name, w.wallet_status
             FROM wallets AS w
             LEFT JOIN wallets_users AS wu ON w.wallet_id = wu.wallet_id
             WHERE w.wallet_user_id = %s OR wu.user_id = %s
         """
 
         result = execute_query(query, (user_id, user_id))
-        wallets = [wallet_info[0] for wallet_info in result]
+        
+        open_wallets = []
+        for wallet_info in result:
+            wallet_name, wallet_status = wallet_info
+            if wallet_status == 'Open':
+                open_wallets.append(wallet_name)
 
-        return jsonify({"success": True, "wallets": wallets})
+        return jsonify({"success": True, "wallets": open_wallets})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
 
@@ -728,7 +724,7 @@ def get_expenses_list(wallet_id):
             JOIN types et ON e.expense_type_id = et.type_id
             JOIN users u ON e.expense_user_id = u.user_id
             WHERE e.expense_wallet_id = %s
-            ORDER BY e.expense_date DESC
+            ORDER BY e.expense_date ASC
         """
 
         result = execute_query(query, (wallet_id,))
