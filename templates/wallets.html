@@ -29,6 +29,10 @@
     text-align: center;
   }
 
+  .closed-wallet {
+    background-color: grey;
+  }
+
 </style>
 
 <div class="container">
@@ -39,7 +43,7 @@
     <button onclick="showAddWalletPopup()" class="add-wallet-button wallet-name btn-focus">Add new wallet</button>
 
     {% for wallet in wallets %}
-    <a href="{{ url_for('wallet_details', wallet_name=wallet[1]) }}" class="wallet-card">
+    <a href="{{ url_for('wallet_details', wallet_name=wallet[1]) }}" class="wallet-card {% if wallet[2] == 'Closed' %}closed-wallet{% endif %}">
       <div class="wallet-name">{{ wallet[1] }}</div>
     </a>
     {% endfor %}

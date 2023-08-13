@@ -52,9 +52,9 @@
   {% if is_owner %}
   <button id="walletStatusButton" class="close-wallet-btn btn-focus" onclick="toggleWallet('{{ wallet.wallet_id }}', '{{ wallet.wallet_status }}')">
     {% if wallet.wallet_status == 'Open' %}
-      Close wallet
+      Close this wallet
     {% else %}
-      Open wallet
+      Open this wallet
     {% endif %}
   </button>  
   {% endif %}
@@ -289,8 +289,7 @@ function toggleWallet(walletId, currentStatus) {
     });
   }
 
-  // Function to fetch and populate expenses
-  function fetchExpenses(walletId) {
+function fetchExpenses(walletId) {
   fetch(`/get_expenses_list/${walletId}`, {
     method: 'GET',
     credentials: 'include'
@@ -299,9 +298,8 @@ function toggleWallet(walletId, currentStatus) {
     .then(data => {
       if (data.success) {
         const expensesTableBody = document.getElementById('expensesTableBody');
-        expensesTableBody.innerHTML = ''; // Clear existing rows
+        expensesTableBody.innerHTML = '';
 
-        // Populate the expenses table with fetched data
         data.expenses_list.forEach((expense, index) => {
           const row = expensesTableBody.insertRow();
           row.innerHTML = `
@@ -322,7 +320,6 @@ function toggleWallet(walletId, currentStatus) {
     });
 }
 
-// Call the fetchExpenses function when the page loads
 document.addEventListener('DOMContentLoaded', function () {
   const walletId = '{{ wallet.wallet_id }}';
   

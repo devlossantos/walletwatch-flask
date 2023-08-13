@@ -1,4 +1,3 @@
-# Import required libraries
 from flask import Flask, render_template, request, jsonify, session
 from flask import redirect, url_for
 import jwt
@@ -13,7 +12,7 @@ app.config['SECRET_KEY'] = 'cct'
 
 # MySQL configuration
 db = {
-    "host": "localhost",
+    "host": "db",
     "user": "cct",
     "password": "cctcollege2023*",
     "database": "walletwatch_db",
@@ -37,7 +36,7 @@ def execute_query(query, params=None, commit=False):
         
         if commit:
             connection.commit()
-            last_row_id = cursor.lastrowid  # Retrieve the last inserted ID
+            last_row_id = cursor.lastrowid
             return last_row_id
         
         if query.strip().lower().startswith('select'):
@@ -733,9 +732,9 @@ def get_expenses_list(wallet_id):
             {
                 "expense_id": expense[0],
                 "name": expense[1],
-                "amount": expense[2],
+                "amount": str(expense[2]),
                 "type": expense[3],
-                "date": expense[4],
+                "date": str(expense[4]),
                 "user": expense[5]
             }
             for expense in result
@@ -754,4 +753,4 @@ def logout():
 
 # Run the app
 if __name__ == '__main__':
-    app.run()
+    app.run(host='0.0.0.0', port=5000, debug=True)
