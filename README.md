@@ -18,7 +18,7 @@ The application is intended to mimic real-life wallets hense the following;
 
 ![dashboard](images/dashboard.png)
 
-![wallets](images/wallet.png)
+![wallets](images/wallets.png)
 
 ![wallet_details](images/wallet_details.png)
 
