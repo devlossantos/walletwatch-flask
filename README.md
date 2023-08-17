@@ -14,6 +14,9 @@ The application is intended to mimic real-life wallets hense the following;
 3. Create wallets for especific expenses (e.g Vacations, John's Birthday)
 4. Add users to your wallets so they can add expenses to the list (Only wallet owner can add, delete users or delete a shared wallet)
 
+![dashboard](images/dashboard.png)
+
+
 ## Getting Started
 
 ### Prerequisites
