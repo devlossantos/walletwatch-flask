@@ -67,7 +67,7 @@
         <table id="expensesTable" class="table mt-2 table-striped table-fixed-header">
           <thead>
             <tr>
-              <th>Row</th>
+              <th>#</th>
               <th style="cursor: pointer;">Name <span id="nameSortIcon"></span></th>
               <th style="cursor: pointer;">Amount <span id="amountSortIcon"></span></th>
               <th style="cursor: pointer;">Type <span id="typeSortIcon"></span></th>
@@ -188,7 +188,7 @@ function toggleWallet(walletId, currentStatus) {
   });
 }
 
-  function removeUser(userEmail) {
+function removeUser(userEmail) {
     Swal.fire({
       title: 'Remove user',
       text: `Are you sure you want to remove ${userEmail}?`,
@@ -235,7 +235,7 @@ function toggleWallet(walletId, currentStatus) {
 
   }
 
-    function showAddUserDialog() {
+function showAddUserDialog() {
       Swal.fire({
         title: 'Add User',
         html: '<input type="email" id="swalUserEmail" class="form-control" placeholder="Enter email">',

@@ -12,12 +12,32 @@ app.config['SECRET_KEY'] = 'cct'
 
 # MySQL configuration
 db = {
-    "host": "db",
+    "host": "localhost",
     "user": "cct",
     "password": "cctcollege2023*",
     "database": "walletwatch_db",
     "pool_size": 10,
 }
+
+def create_tables():
+    try:
+        with connection_pool.get_connection() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SHOW TABLES LIKE 'users'")
+                table_exists = cursor.fetchone()
+
+        if not table_exists:
+            with open('walletwatch_db.sql', 'r') as sql_file:
+                sql_script = sql_file.read()
+
+            with connection_pool.get_connection() as connection:
+                with connection.cursor() as cursor:
+                    cursor.execute(sql_script)
+                    connection.commit()
+
+            print("Tables created successfully")
+    except Exception as e:
+        print("Error creating tables:", e)
 
 connection_pool = pooling.MySQLConnectionPool(**db)
 
@@ -170,7 +190,7 @@ def wallets():
                         return jsonify({'message': 'That wallet already exists, try a different name'}), 409
 
                     # Insert the new wallet into the wallets table
-                    query = "INSERT INTO wallets (wallet_name, wallet_status, wallet_user_id) VALUES (%s, 'Active', %s)"
+                    query = "INSERT INTO wallets (wallet_name, wallet_status, wallet_user_id) VALUES (%s, 'Open', %s)"
                     cursor.execute(query, (wallet_name, user_id))
                     connection.commit()
 
@@ -732,7 +752,7 @@ def get_expenses_list(wallet_id):
             {
                 "expense_id": expense[0],
                 "name": expense[1],
-                "amount": str(expense[2]),
+                "amount": expense[2],
                 "type": expense[3],
                 "date": str(expense[4]),
                 "user": expense[5]
@@ -753,4 +773,5 @@ def logout():
 
 # Run the app
 if __name__ == '__main__':
+    create_tables()
     app.run(host='0.0.0.0', port=5000, debug=True)
