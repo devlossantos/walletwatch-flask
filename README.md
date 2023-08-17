@@ -52,8 +52,6 @@ The application is intended to mimic real-life wallets hense the following;
 
 ### Configuration
 
-Create a MySQL database named "walletwatch".
-
 # Current MySQL configuration
 
 ```python
@@ -65,6 +63,11 @@ db = {
     "pool_size": 10,
 }
 ```
+
+To use the configuration above you need to do the following;
+
+1. Create a local database and called it walletwatch_db, you can use MySQL Workbench for this.
+2. Create the cct user with password cctcollege2023*
 
 ### Run the application
 
