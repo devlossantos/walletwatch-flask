@@ -56,6 +56,7 @@ Create a MySQL database named "walletwatch".
 
 # Current MySQL configuration
 
+```python
 db = {
     "host": "localhost",
     "user": "cct",
@@ -63,6 +64,7 @@ db = {
     "database": "walletwatch_db",
     "pool_size": 10,
 }
+```
 
 ### Run the application
 
