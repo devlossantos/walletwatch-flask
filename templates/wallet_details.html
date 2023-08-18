@@ -47,7 +47,6 @@
 </style>
 
 <div class="container">
-  <!-- Wallet Details -->
   <h2 class="mt-5">{{ wallet.wallet_name }}</h2>
   {% if is_owner %}
   <button id="walletStatusButton" class="close-wallet-btn btn-focus" onclick="toggleWallet('{{ wallet.wallet_id }}', '{{ wallet.wallet_status }}')">
@@ -59,17 +58,27 @@
   </button>  
   {% endif %}
   <div class="row mt-4">
+    <!-- Filter menu bar -->
+    <div class="col-9">
+      <div class="filter-bar">
+        <input class="filter-input" type="text" id="filterName" placeholder="Filter by Name">
+        <input class="filter-input" type="text" id="filterAmount" placeholder="Filter by Amount">
+        <!-- Add more filter options as needed -->
+      </div>
+    </div>
+  </div>
+  <div class="row mt-4">
     <div class="col-9">
       <div class="table-responsive expenses-table-container">
         <table id="expensesTable" class="table mt-2 table-striped table-fixed-header">
           <thead>
             <tr>
               <th>#</th>
-              <th style="cursor: pointer;">Name <span id="nameSortIcon"></span></th>
-              <th style="cursor: pointer;">Amount <span id="amountSortIcon"></span></th>
-              <th style="cursor: pointer;">Type <span id="typeSortIcon"></span></th>
-              <th style="cursor: pointer;">Date <span id="dateSortIcon"></span></th>
-              <th style="cursor: pointer;">User <span id="userSortIcon"></span></th>
+              <th style="cursor: pointer;" onclick="sortTable('Name')">Name <span id="nameSortIcon"></span></th>
+              <th style="cursor: pointer;" onclick="sortTable('Amount')">Amount <span id="amountSortIcon"></span></th>
+              <th style="cursor: pointer;" onclick="sortTable('Type')">Type <span id="typeSortIcon"></span></th>
+              <th style="cursor: pointer;" onclick="sortTable('Date')">Date <span id="dateSortIcon"></span></th>
+              <th style="cursor: pointer;" onclick="sortTable('User')">User <span id="userSortIcon"></span></th>
             </tr>
           </thead>          
           <tbody id="expensesTableBody">
@@ -319,7 +328,7 @@ function fetchExpenses(walletId) {
 
 document.addEventListener('DOMContentLoaded', function () {
   const walletId = '{{ wallet.wallet_id }}';
-  
+
   fetchExpenses(walletId);
 
 });
@@ -332,6 +341,63 @@ function format_amount(amount) {
             maximumFractionDigits: 2
         });
         return formatter.format(amount);
+}
+
+function sortTable(column) {
+  const table = document.getElementById('expensesTable');
+  const rows = Array.from(table.getElementsByTagName('tr'));
+  const headerRow = rows.shift();
+
+  const columnIndex = Array.from(headerRow.cells).findIndex(cell => cell.innerText.includes(column));
+  const sortIcon = document.getElementById(`${column.toLowerCase()}SortIcon`);
+
+  const getCellValue = (row, index) => row.cells[index].textContent.trim();
+  
+  if (!table.sortedColumn || table.sortedColumn !== column) {
+    rows.sort((a, b) => {
+      const aValue = getCellValue(a, columnIndex);
+      const bValue = getCellValue(b, columnIndex);
+      
+      if (column === 'Amount') {
+        const aAmount = parseFloat(aValue.replace(/[^0-9.-]/g, '')) || 0;
+        const bAmount = parseFloat(bValue.replace(/[^0-9.-]/g, '')) || 0;
+        return  bAmount - aAmount;
+      } else if (column === 'Date') {
+        return Date.parse(bValue) - Date.parse(aValue);
+      }
+      
+      return aValue.localeCompare(bValue, undefined, { numeric: true, sensitivity: 'base' });
+
+    });
+
+    table.sortedColumn = column;
+
+    if(column === 'Amount'){
+      sortIcon.innerText = '↑';
+    } else{
+      sortIcon.innerText = '↓';
+    }
+
+    counter = 1;
+
+  } else if (sortIcon.innerText === '↓') {
+    rows.reverse();
+    sortIcon.innerText = '↑';
+    counter +=1;
+  } else if (sortIcon.innerText === '↑') {
+    rows.reverse();
+    sortIcon.innerText = '↓';
+    counter +=1;
+  } 
+  
+  if(counter == 3){
+    rows.sort((a, b) => a.rowIndex - b.rowIndex);
+    table.sortedColumn = null;
+    sortIcon.innerText = '';
+    counter = 1;
+  }
+
+  table.tBodies[0].append(...rows);
 }
 
 </script>
