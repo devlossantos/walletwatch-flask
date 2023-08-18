@@ -157,19 +157,21 @@ function toggleWallet(walletId, currentStatus) {
       })
         .then(response => response.json())
         .then(data => {
-          if (data.message === 'Wallet status updated successfully') {
+          if (data.message === 'Wallet closed successfully' || data.message === 'Wallet opened successfully') {
             const walletStatusButton = document.getElementById('walletStatusButton');
-            walletStatusButton.textContent = newStatus === 'Open' ? 'Open wallet' : 'Close wallet';
+            walletStatusButton.textContent = newStatus === 'Open' ? 'Open this wallet' : 'Close this wallet';
             currentStatus = newStatus;
-            Swal.fire({
-              icon: 'error',
-              title: 'error',
-              text: data.message
-            });
-          } else {
             Swal.fire({
               icon: 'success',
               title: 'success',
+              text: data.message
+            }).then(() => {
+              window.location.reload();
+            });
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: 'error',
               text: data.message
             }).then(() => {
               window.location.reload();

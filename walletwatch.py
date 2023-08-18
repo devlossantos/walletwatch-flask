@@ -268,6 +268,13 @@ def wallet_details(wallet_name):
 @login_required
 def close_wallet(wallet_id):
     try:
+        # Get the wallet_name associated with the wallet_id
+        wallet_name = get_wallet_name_by_id(wallet_id)
+
+        # Check if the wallet_name is "Main"
+        if wallet_name == "Main":
+            return jsonify({'message': 'Your Main wallet cannot be closed.'}), 400
+
         with connection_pool.get_connection() as connection:
             with connection.cursor() as cursor:
                 # Update the wallet status to 'Closed'
@@ -347,6 +354,21 @@ def get_wallet_by_name(wallet_name):
         
     except Exception as e:
         print("Error fetching wallet:", e)
+        return None
+    
+def get_wallet_name_by_id(wallet_id):
+    try:
+        with connection_pool.get_connection() as connection:
+            with connection.cursor() as cursor:
+                query = "SELECT wallet_name FROM wallets WHERE wallet_id = %s"
+                cursor.execute(query, (wallet_id,))
+                wallet_data = cursor.fetchone()
+                if wallet_data:
+                    return wallet_data[0]
+                else:
+                    return None
+    except Exception as e:
+        print("Error getting wallet name:", e)
         return None
 
 @app.route('/add_user', methods=['POST'])
