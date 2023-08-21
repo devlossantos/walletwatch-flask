@@ -362,7 +362,7 @@ function sortTable(column) {
         const bAmount = parseFloat(bValue.replace(/[^0-9.-]/g, '')) || 0;
         return bAmount - aAmount;
       } else if (column === 'Date') {
-        return Date.parse(aValue) - Date.parse(bValue); // Ascending order for Date
+        return Date.parse(aValue) - Date.parse(bValue);
       }
 
       return aValue.localeCompare(bValue, undefined, { numeric: true, sensitivity: 'base' });
@@ -382,7 +382,7 @@ function sortTable(column) {
     counter += 1;
   }
 
-  table.tBodies[0].innerHTML = ''; // Clear the table body
+  table.tBodies[0].innerHTML = '';
   table.tBodies[0].append(...rows);
 }
 
@@ -394,7 +394,7 @@ function sortTableByDateAscending(table, rows) {
     return Date.parse(aValue) - Date.parse(bValue);
   });
 
-  table.tBodies[0].innerHTML = ''; // Clear the table body
+  table.tBodies[0].innerHTML = '';
   table.tBodies[0].append(...rows);
 }
 

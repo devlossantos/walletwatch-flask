@@ -99,19 +99,15 @@
                 var email = $('#user_email').val();
                 var password = $('#user_password').val();
 
-                // Make an AJAX request to the signup route
                 $.ajax({
                     type: 'POST',
                     url: '/signup',
                     data: { 'user_email': email, 'user_password': password },
                     success: function (response) {
-                        // Handle signup success
                         console.log('Signup successful');
-                        // Redirect to the login page or any other desired page
                         window.location.href = '/login';
                     },
                     error: function (xhr, status, error) {
-                        // Handle signup error using SweetAlert
                         var response = JSON.parse(xhr.responseText);
                         Swal.fire({
                             icon: 'error',

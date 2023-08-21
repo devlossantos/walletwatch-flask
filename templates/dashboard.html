@@ -168,7 +168,6 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.20/dist/sweetalert2.all.min.js"></script>  
 <script>
 
-// Function to fetch the current balance for the logged-in user from the server
 function updateBalance() {
   fetch('/get_balance', {
     method: 'GET',
@@ -191,10 +190,8 @@ function updateBalance() {
     });
 }
 
-// Call the updateBalance function to initially fetch and display the balance
 updateBalance();
 
-// Function to fetch and display the sum of expenses for the current month
 function updateExpenses() {
   fetch('/get_expenses', {
     method: 'GET',
@@ -217,12 +214,9 @@ function updateExpenses() {
     });
 }
 
-// Call the updateExpenses function to initially fetch and display the expenses
 updateExpenses();
 
-// Function to fetch the expense types from the server and show the "Add Expense" dialog   
 function fetchAndShowAddExpenseDialog() {
-  // Fetch expense types
   fetch('/get_expense_types', {
     method: 'GET',
     headers: {
@@ -234,7 +228,6 @@ function fetchAndShowAddExpenseDialog() {
       if (expenseData.success) {
         const expenseTypes = expenseData.names;
 
-        // Fetch wallets
         fetch('/get_wallets_list', {
           method: 'GET',
           headers: {
@@ -246,7 +239,6 @@ function fetchAndShowAddExpenseDialog() {
             if (walletData.success) {
               const walletList = walletData.wallets;
 
-              // Call the 'showAddExpenseDialog' function with both expense types and wallet list
               if (expenseTypes && Array.isArray(expenseTypes) && walletList && Array.isArray(walletList)) {
                 showAddExpenseDialog(expenseTypes, walletList);
               } else {
@@ -268,7 +260,6 @@ function fetchAndShowAddExpenseDialog() {
     });
 }
 
-// Function to display the pop-up dialog using SweetAlert
 function showAddMoneyDialog() {
   Swal.fire({
     title: 'Add money',
@@ -309,7 +300,6 @@ function formatAddMoneyAmountInput() {
     amountInput.value = formatAmountWithCommas(formattedAmount);
 }
 
-// Function to show the "Add Expense" dialog with the fetched expense types
 function showAddExpenseDialog(expenseTypes, walletList) {
   Swal.fire({
     title: 'Add Expense',
@@ -367,14 +357,12 @@ function formatAddExpenseAmountInput() {
     amountInput.value = formatAmountWithCommas(formattedAmount);
 }
 
-// Function to add commas for thousands separator
 function formatAmountWithCommas(amount) {
   const parts = amount.split('.');
   const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   return parts.length === 1 ? integerPart : integerPart + '.' + parts[1];
 }
 
-// Function to restrict the amount input length to 9 characters
 function restrictAmountLength(event) {
   const amountInput = event.target;
       const numericValue = amountInput.value.replace(/[^\d]/g, '');
@@ -384,7 +372,6 @@ function restrictAmountLength(event) {
       }
 }
 
-// Function to handle the "Add" button click and save the amount to the server
 function handleAddMoneyButtonClick(amount) {
   const amountInput = amount;
 
@@ -440,13 +427,11 @@ function handleAddExpenseButtonClick(amount, name, type, wallet) {
     });
 }
 
-  // Function to fetch and update the percentages
   async function updatePercentages() {
     try {
       const response = await fetch('/get_percentages');
       const data = await response.json();
 
-      // Update the percentages in each square
       document.getElementById('needsPercentage').innerText = `${data.needs}%`;
       document.getElementById('wantsPercentage').innerText = `${data.wants}%`;
       document.getElementById('savingsDebtPercentage').innerText = `${data.savingsDebt}%`;
@@ -464,7 +449,7 @@ function handleAddExpenseButtonClick(amount, name, type, wallet) {
     }
   }
 
-  // Function to update the color of a square based on the percentage value
+
   function updateSquareColor(squareId, percentage, thresholdLow) {
   const square = document.getElementById(squareId);
 
@@ -500,10 +485,8 @@ function handleAddExpenseButtonClick(amount, name, type, wallet) {
 
 }
 
-  // Call the updatePercentages function initially to populate the squares with data
   updatePercentages();
 
-  // Set an interval to update the percentages every X seconds (e.g., 5 seconds)
   setInterval(updatePercentages, 5000);
 
 </script>

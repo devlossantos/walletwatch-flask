@@ -71,18 +71,15 @@ def execute_query(query, params=None, commit=False):
         cursor.close()
         connection.close()
 
-# Custom decorator to check if the user is logged in
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         token = session.get('token')
         if not token:
-            # Redirect to the login page if the token is missing
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
 
-# Function to get logged-in user's ID
 def get_logged_in_user_id():
     token = session.get('token')
     if token:
@@ -90,7 +87,6 @@ def get_logged_in_user_id():
             decoded_token = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
             return decoded_token.get('user_id')
         except jwt.ExpiredSignatureError:
-            # Token has expired
             return None
     return None
 
@@ -99,7 +95,6 @@ def get_logged_in_user_id():
 def home():
     return render_template('dashboard.html')   
 
-# User Registration route
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
@@ -121,7 +116,6 @@ def signup():
 
     return render_template('signup.html')
 
-# User Login route
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -156,7 +150,6 @@ def login():
 
     return render_template('login.html')
 
-# Dashboard route
 @app.route('/dashboard')
 @login_required
 def dashboard():
@@ -174,7 +167,6 @@ def wallets():
             with connection_pool.get_connection() as connection:
                 with connection.cursor() as cursor:
 
-                    # Check if the wallet name already exists for the user
                     query = """
                         SELECT w.wallet_id
                         FROM wallets w
@@ -189,15 +181,12 @@ def wallets():
                     if existing_wallet is not None:
                         return jsonify({'message': 'That wallet already exists, try a different name'}), 409
 
-                    # Insert the new wallet into the wallets table
                     query = "INSERT INTO wallets (wallet_name, wallet_status, wallet_user_id) VALUES (%s, 'Open', %s)"
                     cursor.execute(query, (wallet_name, user_id))
                     connection.commit()
 
-                    # Get the wallet_id of the newly created wallet
                     wallet_id = cursor.lastrowid
 
-                    # Insert the new wallet into the wallets_users table
                     query = "INSERT INTO wallets_users (wallet_id, user_id) VALUES (%s, %s)"
                     cursor.execute(query, (wallet_id, user_id))
                     connection.commit()
@@ -207,7 +196,7 @@ def wallets():
             return jsonify({'message': 'An error occurred while adding the wallet.'}), 500
 
     else:  # Request method is GET
-        wallets = get_wallets()  # Fetch and sort the wallets
+        wallets = get_wallets() 
 
         return render_template('wallets.html', wallets=wallets)
 
@@ -218,7 +207,6 @@ def get_wallets():
         try:
             with connection_pool.get_connection() as connection:
                 with connection.cursor() as cursor:
-                    # Fetch the wallets for the logged-in user
                     query = """
                     SELECT DISTINCT w.* 
                     FROM wallets AS w 
@@ -230,7 +218,6 @@ def get_wallets():
                     cursor.execute(query, (user_id, user_id))
                     wallets = cursor.fetchall()
 
-                    # Find the index of the "Main" wallet, if it exists
                     main_wallet_index = None
                     for i, wallet in enumerate(wallets):
                         if wallet[1] == 'Main':
@@ -238,7 +225,6 @@ def get_wallets():
                             break
 
                     if main_wallet_index is not None:
-                        # Move the "Main" wallet to the first position in the list
                         main_wallet = wallets.pop(main_wallet_index)
                         wallets.insert(0, main_wallet)
 
@@ -268,16 +254,13 @@ def wallet_details(wallet_name):
 @login_required
 def close_wallet(wallet_id):
     try:
-        # Get the wallet_name associated with the wallet_id
         wallet_name = get_wallet_name_by_id(wallet_id)
 
-        # Check if the wallet_name is "Main"
         if wallet_name == "Main":
             return jsonify({'message': 'Your Main wallet cannot be closed.'}), 400
 
         with connection_pool.get_connection() as connection:
             with connection.cursor() as cursor:
-                # Update the wallet status to 'Closed'
                 query = "UPDATE wallets SET wallet_status = 'Closed' WHERE wallet_id = %s"
                 cursor.execute(query, (wallet_id,))
                 connection.commit()
@@ -293,7 +276,6 @@ def open_wallet(wallet_id):
     try:
         with connection_pool.get_connection() as connection:
             with connection.cursor() as cursor:
-                # Update the wallet status to 'Open'
                 query = "UPDATE wallets SET wallet_status = 'Open' WHERE wallet_id = %s"
                 cursor.execute(query, (wallet_id,))
                 connection.commit()
@@ -330,7 +312,6 @@ def get_wallet_by_name(wallet_name):
         with connection_pool.get_connection() as connection:
             with connection.cursor() as cursor:
 
-                # Fetch the wallet details from the database based on the wallet name and user_id
                 query = """
                 SELECT w.*
                 FROM wallets AS w
@@ -341,7 +322,6 @@ def get_wallet_by_name(wallet_name):
                 wallet = cursor.fetchone()
 
         if wallet:
-            # If the wallet exists, return it as a dictionary
             wallet_dict = {
                 'wallet_id': wallet[0],
                 'wallet_name': wallet[1],
@@ -375,7 +355,7 @@ def get_wallet_name_by_id(wallet_id):
 @login_required
 def add_user():
     user_email = request.json.get('user_email')
-    wallet_id = request.json.get('wallet_id')  # Get the wallet ID from the request JSON
+    wallet_id = request.json.get('wallet_id')
     user_id = get_logged_in_user_id()
 
     if user_email and wallet_id and user_id is not None:
@@ -383,7 +363,6 @@ def add_user():
         try:
             with connection_pool.get_connection() as connection:
                 with connection.cursor() as cursor:
-                    # Check if the user exists
                     query = "SELECT * FROM users WHERE user_email = %s"
                     cursor.execute(query, (user_email,))
                     existing_user = cursor.fetchone()
@@ -392,7 +371,6 @@ def add_user():
 
                 with connection_pool.get_connection() as connection:
                     with connection.cursor() as cursor:
-                        # Check if the user already has access to the wallet
                         query = "SELECT * FROM wallets_users WHERE wallet_id = %s AND user_id = %s"
                         cursor.execute(query, (wallet_id, existing_user[0]))
                         existing_wallet_user = cursor.fetchone()
@@ -402,21 +380,18 @@ def add_user():
 
                 with connection_pool.get_connection() as connection:
                     with connection.cursor() as cursor:
-                        # Insert the new user into the wallets_users table
                         query = "INSERT INTO wallets_users (wallet_id, user_id) VALUES (%s, %s)"
                         cursor.execute(query, (wallet_id, existing_user[0]))
                         connection.commit()
 
                 return jsonify({'message': 'User added successfully'})
 
-            # User does not exist
             return jsonify({'message': 'User does not exist'}), 404
 
         except Exception as e:
             print("Error adding user:", e)
             return jsonify({'message': 'An error occurred while adding the user.'}), 500
 
-    # User email not provided
     return jsonify({'message': 'Email required'}), 400
 
 @app.route('/remove_user', methods=['POST'])
@@ -431,7 +406,6 @@ def remove_user():
         try:
             with connection_pool.get_connection() as connection:
                 with connection.cursor() as cursor:
-                    # Check if the user to be removed exists
                     query = "SELECT * FROM users WHERE user_email = %s"
                     cursor.execute(query, (user_email,))
                     user = cursor.fetchone()
@@ -439,7 +413,6 @@ def remove_user():
             if user:
                 with connection_pool.get_connection() as connection:
                     with connection.cursor() as cursor:
-                        # Check if the user to be removed is a shared user of the wallet
                         query = "SELECT * FROM wallets_users WHERE wallet_id = %s AND user_id = %s"
                         cursor.execute(query, (wallet_id, user[0]))
                         wallet_user = cursor.fetchone()
@@ -447,24 +420,20 @@ def remove_user():
                     if wallet_user:
                         with connection_pool.get_connection() as connection:
                             with connection.cursor() as cursor:
-                            # Remove the user from the wallets_users table
                                 query = "DELETE FROM wallets_users WHERE wallet_id = %s AND user_id = %s"
                                 cursor.execute(query, (wallet_id, user[0]))
                                 connection.commit()
 
                         return jsonify({'message': 'User removed successfully'})
 
-                    # User is not a shared user of the wallet
                     return jsonify({'message': 'User is not associated with this wallet'}), 404
 
-            # User does not exist
             return jsonify({'message': 'User does not exist'}), 404
 
         except Exception as e:
             print("Error deleting user:", e)
             return jsonify({'message': 'An error occurred while deleting the user.'}), 500
 
-    # User email or wallet ID not provided
     return jsonify({'message': 'Invalid request'}), 400
 
 @app.route('/add_money', methods=['POST'])
@@ -475,17 +444,14 @@ def add_money():
     data = request.get_json()
     fund_amount = data.get('fund_amount')
 
-    # Validate the entered amount
     if not fund_amount or fund_amount == '0.00':
         return jsonify({'success': False, 'message': 'Please enter a valid amount.'}), 400
 
     try:
-        # Convert the amount to a decimal value for storage in the funds table
         decimal_amount = float(fund_amount.replace(',', '').replace('.', '')) / 100
 
         with connection_pool.get_connection() as connection:
             with connection.cursor() as cursor:
-                # Insert the amount into the funds table
                 query = "INSERT INTO funds (fund_user_id, fund_amount) VALUES (%s, %s)"
                 cursor.execute(query, (user_id, decimal_amount))
                 connection.commit()
@@ -512,19 +478,15 @@ def add_expense():
 
     balance = get_balance(user_id)
 
-    # Validate the entered amount
     if not amount or amount == '0.00':
         return jsonify({'success': False, 'message': 'Please enter a valid amount.'}), 400
         
-    # Validate the name
     if not name or name.strip() == '':
         return jsonify({'success': False, 'message': 'Please enter a valid name.'}), 400
         
-    # Validate the type
     if not type_id:
         return jsonify({'success': False, 'message': 'Please enter a valid type.'}), 400
 
-    # Check if the wallet is open
     wallet_status = get_wallet_status(wallet_id)
     if wallet_status != 'Open':
         return jsonify({'success': False, 'message': 'You can only add expenses to open wallets.'}), 403
@@ -533,12 +495,10 @@ def add_expense():
         return jsonify({'success': False, 'message': 'Insufficient funds.'}), 400
 
     try:
-        # Convert the amount to a decimal value for storage in the expenses table
         decimal_amount = float(amount.replace(',', '').replace('.', '')) / 100
 
         with connection_pool.get_connection() as connection:
             with connection.cursor() as cursor:
-                # Insert the expense into the expenses table
                 query = "INSERT INTO expenses (expense_user_id, expense_wallet_id, expense_type_id, expense_amount, expense_name) VALUES (%s, %s, %s, %s, %s)"
                 cursor.execute(query, (user_id, wallet_id, type_id, decimal_amount, name))
                 connection.commit()
@@ -584,7 +544,6 @@ def get_wallet_id_by_name(expense_wallet):
         print("Error retrieving wallet ID by name:", e)
         return None
 
-# Function to get the type ID based on the type name
 def get_type_id_by_name(expense_type):
     try:
         with connection_pool.get_connection() as connection:
@@ -707,7 +666,6 @@ def get_wallets_list():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
 
-# Get the percentages amount by querying the database funds and expenses table
 @app.route('/get_percentages', methods=['GET'])
 @login_required
 def get_percentages():
@@ -754,7 +712,6 @@ def get_percentages():
         print("Error fetching percentages:", e)
         return jsonify({'message': 'An error occurred while fetching percentages.'}), 500
     
-# Get the list of expenses to fill the table inside each wallet
 @app.route('/get_expenses_list/<wallet_id>', methods=['GET'])
 @login_required
 def get_expenses_list(wallet_id):
@@ -786,14 +743,12 @@ def get_expenses_list(wallet_id):
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
 
-# Logout route
 @app.route('/logout')
 @login_required
 def logout():
     session.pop('token', None)
     return redirect(url_for('login'))  
 
-# Run the app
 if __name__ == '__main__':
     create_tables()
     app.run(host='0.0.0.0', port=5000, debug=True)

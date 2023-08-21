@@ -37,19 +37,16 @@
 
 <div class="container">
 
-  <!-- Wallets -->
   <div class="wallets-container">
-    <!-- Add Wallet Button -->
     <button onclick="showAddWalletPopup()" class="add-wallet-button wallet-name btn-focus">Add new wallet</button>
 
     {% for wallet in wallets %}
     <a href="{{ url_for('wallet_details', wallet_name=wallet[1]) }}" class="wallet-card {% if wallet[2] == 'Closed' %}closed-wallet{% endif %}">
-      <div class="wallet-name">{{ wallet[1] }}</div>
+      <div class="wallet-name">{{ wallet[1] }}</div> <!--mysql approach-->
+      <div class="wallet-name">{{ wallet['wallet_name'] }}</div> <!--mongodb approach-->
     </a>
     {% endfor %}
   </div>
-
-  <!-- Add Wallet Popup -->
   <div id="addWalletPopup" class="popup">
     <form id="addWalletForm" action="/wallets" method="post">
       <div>
@@ -61,7 +58,6 @@
     </form> 
   </div>
 
-  <!-- Error Popup -->
   <div id="errorPopup" class="popup">
     <div id="addWalletErrorMessage" class="text-danger"></div>
     <button onclick="closeErrorPopup()">Close</button>
@@ -73,8 +69,6 @@
 
     var walletNameInput = document.getElementById("walletName");
     walletNameInput.value = '';
-
-    // Use SweetAlert to show the "Add Wallet" popup
     Swal.fire({
       title: 'New wallet',
       html: '<input type="text" id="swalWalletName" class="swal2-input" placeholder="Enter wallet name" maxlength="30">',
@@ -105,18 +99,15 @@
             }
           })
           .then(function() {
-            // Wallet added successfully, show success message
             Swal.fire({
               icon: 'success',
               title: 'Success',
               text: 'Wallet added successfully.'
             }).then(function() {
-              // Refresh the page to see the updated list
               window.location.reload();
             });
           })
           .catch(function(error) {
-            // Handle the error response and show it in SweetAlert
             Swal.fire({
               icon: 'error',
               title: 'Error',
