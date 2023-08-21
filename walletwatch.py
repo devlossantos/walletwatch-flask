@@ -5,6 +5,7 @@ from functools import wraps
 from datetime import datetime, timedelta
 from mysql.connector import pooling
 import bcrypt
+import time
 
 # Create a Flask app
 app = Flask(__name__)
@@ -71,6 +72,23 @@ def execute_query(query, params=None, commit=False):
         cursor.close()
         connection.close()
 
+
+# Read speed measurement
+def measure_mysql_read_speed():
+    try:
+        start_time = time.time()
+
+        query = "SELECT * FROM expenses LIMIT 10"
+        result = execute_query(query)
+
+        end_time = time.time()
+        read_time = end_time - start_time
+
+        print('MySQL ead speed time: ',read_time)
+    
+    except Exception as e:
+        print("Error measuring MySQL read speed:", e)
+
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -93,6 +111,7 @@ def get_logged_in_user_id():
 @app.route('/')
 @login_required
 def home():
+    measure_mysql_read_speed()
     return render_template('dashboard.html')   
 
 @app.route('/signup', methods=['GET', 'POST'])

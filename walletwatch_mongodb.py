@@ -6,6 +6,7 @@ import bcrypt
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 from bson.decimal128 import Decimal128
+import time
 
 # Create a Flask app
 app = Flask(__name__)
@@ -14,6 +15,13 @@ app.config['SECRET_KEY'] = 'cct'
 # MongoDB configuration
 mongo_client = MongoClient('mongodb://localhost:27017/')
 db = mongo_client['walletwatch_db']
+
+# Read speed measurement
+start_time = time.time()
+documents = db.expenses.find().limit(10)
+result = list(documents)
+end_time = time.time()
+read_time = end_time - start_time
 
 def login_required(f):
     @wraps(f)
@@ -37,6 +45,7 @@ def get_logged_in_user_id():
 @app.route('/')
 @login_required
 def home():
+    print('Mongodb read speed time: ',read_time)
     return render_template('dashboard.html')
 
 @app.route('/signup', methods=['GET', 'POST'])
@@ -68,8 +77,6 @@ def login():
         user_password = request.form['user_password']
 
         user = db.users.find_one({'user_email': user_email})
-
-        print("user: ", user)
 
         if user:
             stored_password = user['user_password']

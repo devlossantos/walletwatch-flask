@@ -100,15 +100,12 @@
                 var email = $('#user_email').val();
                 var password = $('#user_password').val();
     
-                // Make an AJAX request to the login route
                 $.ajax({
                     type: 'POST',
                     url: '/login',
                     data: { 'user_email': email, 'user_password': password },
                     success: function (response) {
-                        // Save the JWT token in localStorage or sessionStorage
                         localStorage.setItem('token', response.token);
-                        // Redirect to the home page or any other desired page
                         window.location.href = '/dashboard';
                     },
                     error: function (xhr, status, error) {
@@ -119,7 +116,6 @@
                             errorMessage = 'An error occurred. Please try again.';
                         }
     
-                        // Handle login error using SweetAlert
                         Swal.fire({
                             icon: 'error',
                             title: 'Login Failed',
