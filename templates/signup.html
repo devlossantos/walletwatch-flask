@@ -74,6 +74,11 @@
             text-decoration: none;
             font-weight: bold;
         }
+
+        .error-border {
+            border: 1px solid red !important;
+        }
+
     </style>
 </head>
 <body>
@@ -81,7 +86,18 @@
         <h1>Sign Up</h1>
         <form id="signup-form">
             <input type="text" id="user_email" name="user_email" placeholder="Email" required><br><br>
+            <p class="error-message" id="email-error-message" style="color: red; margin-top: -30px; margin-bottom: 30px;"></p>
             <input type="password" id="user_password" name="user_password" placeholder="Password" required><br><br>
+            <p class="error-message" id="password-error-message" style="color: rgb(129, 129, 129);">
+                Password criteria:
+                <ul>
+                    <li id="uppercase-li" style="color: rgb(129, 129, 129);">One uppercase</li>
+                    <li id="lowercase-li" style="color: rgb(129, 129, 129);">One lowercase</li>
+                    <li id="number-li" style="color: rgb(129, 129, 129);">One number</li>
+                    <li id="special-char-li" style="color: rgb(129, 129, 129);">One special character</li>
+                    <li id="length-li" style="color: rgb(129, 129, 129);">At least 8 characters</li>
+                </ul>
+            </p>
             <input type="submit" value="Sign Up">
         </form>
         <div class="text-center mt-3">
@@ -91,14 +107,90 @@
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.18/dist/sweetalert2.all.min.js"></script>
+
     <script>
         $(document).ready(function () {
+            $('#user_email').on('input', function () {
+                var email = $(this).val();
+                
+                var validEmailFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+            if (!validEmailFormat) {
+                $('#email-error-message').text('Invalid email format');
+            } else {
+                $('#email-error-message').empty();
+            }
+                
+                $.ajax({
+                    type: 'POST',
+                    url: '/check_email',
+                    data: { 'user_email': email },
+                    success: function (response) {
+                        if (response.exists) {
+                            $('#email-error-message').text('Email already in use, try logging in.');
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.log('Email check failed: ' + error);
+                    }
+                });
+            });
+    
+            $('#user_password').on('input', function () {
+                var password = $(this).val();
+                var passwordErrorElement = $('#password-error-message');
+                
+                    var criteriaMet = {
+                        uppercase: /[A-Z]/.test(password),
+                        lowercase: /[a-z]/.test(password),
+                        number: /[0-9]/.test(password),
+                        specialChar: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/.test(password),
+                        length: password.length >= 8
+                    };
+
+                    $('#uppercase-li').css('color', criteriaMet.uppercase ? 'green' : 'grey');
+                    $('#lowercase-li').css('color', criteriaMet.lowercase ? 'green' : 'grey');
+                    $('#number-li').css('color', criteriaMet.number ? 'green' : 'grey');
+                    $('#special-char-li').css('color', criteriaMet.specialChar ? 'green' : 'grey');
+                    $('#length-li').css('color', criteriaMet.length ? 'green' : 'grey');
+                });
+            });
+    
             $('#signup-form').submit(function (event) {
                 event.preventDefault();
+
+                // Reset border colors
+                $('#user_email, #user_password').removeClass('error-border');
 
                 var email = $('#user_email').val();
                 var password = $('#user_password').val();
 
+                // Validate email
+                var validEmailFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+                if (!validEmailFormat) {
+                    $('#user_email').addClass('error-border');
+                    return;
+                } else {
+                    $('#email-error-message').empty();
+                }
+
+                // Validate password criteria
+                var criteriaMet = {
+                    uppercase: /[A-Z]/.test(password),
+                    lowercase: /[a-z]/.test(password),
+                    number: /[0-9]/.test(password),
+                    specialChar: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/.test(password),
+                    length: password.length >= 8
+                };
+
+                if (!criteriaMet.uppercase || !criteriaMet.lowercase || !criteriaMet.number || !criteriaMet.specialChar || !criteriaMet.length) {
+                    $('#user_password').addClass('error-border');
+                }
+
+                // If either email or password criteria is not met, prevent sign up
+                if (!validEmailFormat || !criteriaMet.uppercase || !criteriaMet.lowercase || !criteriaMet.number || !criteriaMet.specialChar || !criteriaMet.length) {
+                    return;
+                }
+    
                 $.ajax({
                     type: 'POST',
                     url: '/signup',
@@ -117,7 +209,6 @@
                     }
                 });
             });
-        });
-    </script>
+    </script>  
 </body>
 </html>

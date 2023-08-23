@@ -148,6 +148,18 @@ def signup():
     return render_template("signup.html")
 
 
+@app.route("/check_email", methods=["POST"])
+def check_email():
+    user_email = request.form["user_email"]
+    query = "SELECT EXISTS (SELECT 1 FROM users WHERE user_email = %s) AS email_exists"
+    result = execute_query(query, (user_email,))
+    
+    # Extract the value from the tuple and check if it's 1 (exists) or 0 (does not exist)
+    email_exists = result[0][0] == 1
+    
+    return jsonify({"exists": email_exists})
+
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
