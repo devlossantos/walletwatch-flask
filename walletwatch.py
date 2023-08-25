@@ -132,12 +132,6 @@ def signup():
         user_email = request.form["user_email"]
         user_password = request.form["user_password"]
 
-        query = "SELECT * FROM users WHERE user_email = %s"
-        existing_user = execute_query(query, (user_email,))
-
-        if existing_user:
-            return jsonify({"message": "Email already exists"}), 409
-
         hashed_password = bcrypt.hashpw(user_password.encode("utf-8"), bcrypt.gensalt())
 
         query = "INSERT INTO users (user_email, user_password) VALUES (%s, %s)"
@@ -153,10 +147,10 @@ def check_email():
     user_email = request.form["user_email"]
     query = "SELECT EXISTS (SELECT 1 FROM users WHERE user_email = %s) AS email_exists"
     result = execute_query(query, (user_email,))
-    
+
     # Extract the value from the tuple and check if it's 1 (exists) or 0 (does not exist)
     email_exists = result[0][0] == 1
-    
+
     return jsonify({"exists": email_exists})
 
 
