@@ -1,0 +1,65 @@
+@startuml walletwatch_sequence
+
+actor User
+participant "Front-End" as FE
+participant "Back-End" as BE
+database MySQL
+database MongoDB
+
+User -> FE: Login
+FE -> BE: Authenticate User
+BE -> MySQL: Verify Credentials
+BE -> MongoDB: Get User Wallets
+
+User -> FE: Access Dashboard
+FE -> BE: Get User's Wallets and Balances
+BE -> MySQL: Fetch Wallets
+BE -> MySQL: Fetch Balances
+
+User -> FE: Add Income
+FE -> BE: Send Income Details
+BE -> MySQL: Update Main Wallet Balance
+
+User -> FE: Add Expense
+FE -> BE: Send Expense Details
+BE -> MySQL: Check Main Wallet Balance
+alt Sufficient Balance
+    BE -> MySQL: Update Main Wallet Balance
+    BE -> MongoDB: Add Expense Record
+else Insufficient Balance
+    BE --> FE: Show Error Message
+end
+
+User -> FE: Access Wallet Page
+FE -> BE: Get User's Wallets
+BE -> MySQL: Fetch Wallets
+
+User -> FE: Add New Wallet
+FE -> BE: Send Wallet Details
+BE -> MySQL: Create New Wallet
+BE -> MySQL: Assign User to Wallet
+
+User -> FE: Open/Close Wallet
+FE -> BE: Send Open/Close Request
+BE -> MySQL: Update Wallet Status
+
+User -> FE: Share Wallet with User
+FE -> BE: Send Share Request
+BE -> MySQL: Add User to Wallet
+
+User -> FE: Access Shared Wallet
+FE -> BE: Get Shared Wallet Details
+BE -> MySQL: Fetch Wallet Details
+BE -> MongoDB: Fetch Expenses for Shared Wallet
+
+User -> FE: Add Expense to Shared Wallet
+FE -> BE: Send Expense Details
+BE -> MySQL: Check Shared Wallet Balance
+alt Sufficient Balance
+    BE -> MySQL: Update Shared Wallet Balance
+    BE -> MongoDB: Add Expense Record for Shared Wallet
+else Insufficient Balance
+    BE --> FE: Show Error Message
+end
+
+@enduml
